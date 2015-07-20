@@ -8,6 +8,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.wearable.view.DismissOverlayView;
 import android.support.wearable.view.WatchViewStub;
 import android.util.Log;
@@ -48,6 +50,7 @@ public class MainActivity extends Activity{
     int hr = 60;
     int convertToSecs = 1000;
 
+    boolean isAlarmSet = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,11 +106,15 @@ public class MainActivity extends Activity{
         bStart = (Button) findViewById(R.id.bStart);
         bReset = (Button) findViewById(R.id.bReset);
 
+
         bStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // TODO set the boolean value and handle according
                 setupTimer(mTimerView.getSetMinutes(), mTimerView.getSetHours());
-                finish();
+                countDownTime = mTimerView.getSetMinutes()*(60*1000);
+                beginCountDownThread();
+                //finish();
             }
         });
         bReset.setOnClickListener(new View.OnClickListener() {
@@ -122,6 +129,60 @@ public class MainActivity extends Activity{
 
             }
         });
+    }
+
+    // temp keep track of the ccountDownTime
+    // these three will handle the countdown display for the user.
+    long countDownTime;
+    final Handler handler = new Handler();
+    Thread mTimerThread;
+
+    private void beginCountDownThread() {
+        countDownTime = mTimerView.getSetMinutes()*1000*60;
+
+        mTimerThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    countDownTime += (-1000);
+                    try {
+                        Thread.sleep(1000);
+                        handler.post(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                // display minute version of it.
+                                int countDownInMinutes = (int)countDownTime/1000/60;
+                                // the alarm is less than 60 mins - lets have put min and seconds in
+                                // hour and minutes.
+                                if(countDownInMinutes < 60) {
+                                    setHours(countDownInMinutes);
+                                    // seconds
+                                    setMinutes((int)countDownTime/1000%60);
+                                    //TODO lets make sure we change the text under the hr and min to the appropriate stuff
+                                    // todo then come back
+                                }else {
+                                    // TODO lets remove the seconds if we are over 60 minutes and show hr/min.
+                                    setMinutes((int)(countDownTime/1000/60));
+
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        // TODO: handle exception
+                    }
+                }
+            }
+        });
+        mTimerThread.start();
+    }
+    //TODO stoped here setting up a thread to run when tyhe start button shows, the thread will continue to count down
+
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacks(mTimerThread);
+        super.onDestroy();
+
     }
 
     // Took this from Timer sample project
@@ -146,6 +207,7 @@ public class MainActivity extends Activity{
 
         // Register with the alarm manager to display a notification when the timer is done.
         registerWithAlarmManager(fullTime);
+        isAlarmSet = true;
 
     }
 
@@ -205,16 +267,7 @@ public class MainActivity extends Activity{
     }
 
     private void registerWithAlarmManager(long duration) {
-/*
-        // Get the alarm manager.
-        AlarmManager alarm = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
 
-        // Create intent that gets fired when timer expires.
-        Intent intent = new Intent(Constants.ACTION_SHOW_ALARM, null, this,
-                TimerNotificationService.class);
-        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT);
-*/
         // Calculate the time when it expires.
         long wakeupTime = System.currentTimeMillis() + duration;
 

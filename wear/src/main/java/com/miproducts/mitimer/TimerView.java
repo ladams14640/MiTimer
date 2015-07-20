@@ -567,6 +567,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
         }
     }
 
+
     public void setMinutes(int minutes){
         minuteSets = minutes;
         mActivity.setMinutes(minutes);
