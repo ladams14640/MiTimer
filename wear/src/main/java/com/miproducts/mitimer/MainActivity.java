@@ -82,7 +82,6 @@ public class MainActivity extends Activity{
                 });
 
 
-
                 initTextViews();
 
 

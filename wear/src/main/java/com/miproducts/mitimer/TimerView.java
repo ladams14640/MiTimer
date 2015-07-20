@@ -56,6 +56,7 @@ import com.miproducts.mitimer.util.TimerFormat;
 import java.sql.Time;
 
 /**
+ * The Main view for setting the time and interacting.
  * Created by Larry on 6/4/2015.
  */
 public class TimerView extends View implements OnTouchListener, View.OnLongClickListener {
@@ -130,6 +131,11 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
     float tDistance;
 
     TimeValuesAndPressCalculator pressCalculator;
+
+    // keep track if we have set the time.
+    private boolean isSet = false;
+    // detect if touch was in the center and if we can assume the user wants to be prompted to dismiss app.
+    Rect rectdismiss;
 
     public TimerView(Context context) {
         super(context);
@@ -222,6 +228,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
             initArc();
             initJoyStick();
             initRect();
+            createDismissRectangle();
             mDeepMinute = new DeepMinute(mContext, xHalf, this);
         }
 
@@ -300,7 +307,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
     Runnable mLongPressed = new Runnable() {
         public void run() {
             log("Long press!");
-            vibrate(false);
+            //vibrate(false);
             initZoomedIn(minuteSets);
             // SHOULD LIGHT VIBRATE
         }
@@ -310,7 +317,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
 
     Runnable mVeryLongPressed = new Runnable() {
         public void run() {
-            vibrate(true);
+            //vibrate(true);
 
             log("VeryLong press!");
             mActivity.hideLayout(true);
@@ -332,6 +339,11 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
         }
 
     }
+    // create a rectangle spot where we would want to make sure dismisspress occurs.
+    private void createDismissRectangle(){
+        rectdismiss = new Rect((int)xHalf-20, (int)yHalf-20, (int)xHalf+20, (int)yHalf+20);
+    }
+
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         //log("TimerViews onTOuchListener");
@@ -347,7 +359,13 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
                 handVeryLongPress.removeCallbacks(mVeryLongPressed);
                 // lets set a Runnable if we reach the 1 second
                 handLongPress.postDelayed(mLongPressed, Constants.THRESHOLD_LONGPRESS);
-                handVeryLongPress.postDelayed(mVeryLongPressed, Constants.THRESHOLD_VERY_LONGPRESS);
+                // check and make sure we are in the center for a dismiss action
+                if(rectdismiss.contains((int)xDown,(int)yDown)){
+                    //TODO changed from the really long press to just longpress
+                    // since i did the above we want to remove incase.
+                    handLongPress.removeCallbacks(mLongPressed);
+                    handLongPress.postDelayed(mVeryLongPressed, Constants.THRESHOLD_LONGPRESS);
+                }
 
 
 
@@ -470,10 +488,13 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
             mPaint.setStyle(Paint.Style.STROKE);
             mPaint.setStrokeWidth(5);
         }
+        int xHalfCanvas;
+        int yHalfCanvas;
 
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
+
             log("Tic onDraw");
                // log("drawing Tic Arc with start Angle of " + mStartAngle);
                 // we will pass in the startAngle, always increase by 1 degree.
