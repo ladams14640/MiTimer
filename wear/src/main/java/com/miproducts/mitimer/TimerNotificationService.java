@@ -102,9 +102,17 @@ public class TimerNotificationService extends IntentService {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Timer deleted.");
         }
+
+        cancelTimerThread();
+
         if(vibrator != null)
             if(vibrator.hasVibrator())
                 vibrator.cancel();
+    }
+
+    private void cancelTimerThread() {
+        Intent cancelIntent = new Intent("Cancel_Timer");
+        sendBroadcast(cancelIntent);
     }
 
     private void cancelCountdownNotification() {
