@@ -273,7 +273,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
                 bm, 0, 0, width, height, matrix, false);
         return resizedBitmap;
     }
-
+        //TODO remove switch
         @Override
         public boolean onTouchEvent(MotionEvent event){
             switch(event.getAction()){
@@ -309,7 +309,6 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
             log("Long press!");
             //vibrate(false);
             initZoomedIn(minuteSets);
-            // SHOULD LIGHT VIBRATE
         }
     };
 
@@ -353,16 +352,18 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
             case MotionEvent.ACTION_DOWN:
                 xDown = event.getX();
                 yDown = event.getY();
-
+                // lets move the arc - TETS 7/22/15
+                testJoyStick.processTouch(event.getX(), event.getY());
                 // cancel the Runnables incase.
                 handLongPress.removeCallbacks(mLongPressed);
                 handVeryLongPress.removeCallbacks(mVeryLongPressed);
                 // lets set a Runnable if we reach the 1 second
                 handLongPress.postDelayed(mLongPressed, Constants.THRESHOLD_LONGPRESS);
+
                 // check and make sure we are in the center for a dismiss action
                 if(rectdismiss.contains((int)xDown,(int)yDown)){
-                    //TODO changed from the really long press to just longpress
                     // since i did the above we want to remove incase.
+                    handLongPress.removeCallbacks(mVeryLongPressed);
                     handLongPress.removeCallbacks(mLongPressed);
                     handLongPress.postDelayed(mVeryLongPressed, Constants.THRESHOLD_LONGPRESS);
                 }
@@ -402,7 +403,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
 
                 // remove the longPressHandler
                 float dist = Math.abs((xMove - xDown) + (yMove - yDown));
-                if(dist > 25){
+                if(dist > 50){
                     handLongPress.removeCallbacks(mLongPressed);
                     handVeryLongPress.removeCallbacks(mVeryLongPressed);
                 }
@@ -577,6 +578,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
         hourSets = hours;
         mActivity.setHours(hours);
     }
+
 
     public int getSetMinutes(){
         return minuteSets;

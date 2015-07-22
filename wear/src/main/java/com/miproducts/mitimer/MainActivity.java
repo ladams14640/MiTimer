@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -32,8 +33,8 @@ public class MainActivity extends Activity{
     private FrameLayout container;
     private TimerView mTimerView;
 
-    DismissOverlay llDismissalOverlay;
-    FrameLayout flLayout;
+    private DismissOverlay llDismissalOverlay;
+    private FrameLayout flLayout;
 
     // for exiting the app
     public DismissOverlayView mDismissOverlay;
@@ -45,14 +46,26 @@ public class MainActivity extends Activity{
     public BorderTextView btvMinToHr;
     public BorderTextView btvSecsToMin;
 
-    TextView tvHr;
-    TextView tvMin;
+    private TextView tvHr;
+    private TextView tvMin;
 
-    int min = 60;
-    int hr = 60;
-    int convertToSecs = 1000;
+    private int min = 60;
+    private int hr = 60;
+    private int convertToSecs = 1000;
 
-    boolean isAlarmSet = false;
+    private TimePreferenceSaved prefClass;
+
+    private boolean isAlarmSet = false;
+
+    // temp keep track of the ccountDownTime
+    // these three will handle the countdown display for the user.
+    private long countDownTime;
+    private final Handler handler = new Handler();
+    private ThreadTimer mTimerThread;
+
+    // AlarmTime from preference, minus current system time (eventually)
+    private long prefAlarmTime = 0;
+
 
     // tell us to kill thread
     final BroadcastReceiver brKillThread = new BroadcastReceiver() {
@@ -63,8 +76,6 @@ public class MainActivity extends Activity{
             finish();
         }
     };
-
-
 
 
     @Override
@@ -101,13 +112,15 @@ public class MainActivity extends Activity{
 
 
                 initTextViews();
-
+                grabCurrentAlarmTime();
 
 
             }
 
         });
     }
+
+
 
     private void initTextViews() {
         btvMinToHr = (BorderTextView) findViewById(R.id.btvMinOrHr);
@@ -127,6 +140,7 @@ public class MainActivity extends Activity{
             public void onClick(View v) {
                 setupTimer(mTimerView.getSetMinutes(), mTimerView.getSetHours());
                 countDownTime = mTimerView.getSetMinutes()*(60*1000);
+                prefClass.saveAlarmTime(countDownTime);
                 beginCountDownThread();
                 //finish();
             }
@@ -140,58 +154,48 @@ public class MainActivity extends Activity{
 
                 btvSecsToMin.setText("0");
                 btvMinToHr.setText("0");
+                mTimerThread.cancelRunning();
 
             }
         });
     }
 
-    // temp keep track of the ccountDownTime
-    // these three will handle the countdown display for the user.
-    long countDownTime;
-    final Handler handler = new Handler();
-    Thread mTimerThread;
+    // grab old alarmtime and compare to now
+    private void grabCurrentAlarmTime() {
+        log("grabCurrentAlarm");
+        prefClass = new TimePreferenceSaved(this);
+        prefAlarmTime = prefClass.computeTimeLeftOnAlarm(System.currentTimeMillis());
+        // if the time difference hasn't passed then we can
+        //TODO we probably want to set this preference with a complete broadcastReceiver call
+        // TODO that way it will be 0 when we come back
+        if(prefAlarmTime > 0){
+            log("greater than 0");
+
+            //if(mTimerThread == null){
+                handler.removeCallbacks(mTimerThread);
+                mTimerThread = new ThreadTimer(handler, this, countDownTime);
+                mTimerThread.start();
+            //}
+        }else {
+            log("less than or equal to 0");
+        }
+    }
+
+
+
+
 
     private void beginCountDownThread() {
-        countDownTime = mTimerView.getSetMinutes()*1000*60;
-        // remove prior threads
+        // get the time - its in a whole number 12 minutes or 50 minutes - turn it into milliseconds
+        countDownTime = (mTimerView.getSetMinutes()*1000*60);
+        int countDownTimeHours = (mTimerView.getSetHours()*1000*60*60);
+        countDownTime += countDownTimeHours;
+        // remove prior thread
         handler.removeCallbacks(mTimerThread);
-        mTimerThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    countDownTime += (-1000);
-                    try {
-                        Thread.sleep(1000);
-                        handler.post(new Runnable() {
-
-                            @Override
-                            public void run() {
-                                // display minute version of it.
-                                int countDownInMinutes = (int)countDownTime/1000/60;
-                                // the alarm is less than 60 mins - lets have put min and seconds in
-                                // hour and minutes.
-                                if(countDownInMinutes < 60) {
-                                    setHours(countDownInMinutes);
-                                    // seconds
-                                    setMinutes((int)countDownTime/1000%60);
-                                    //TODO lets make sure we change the text under the hr and min to the appropriate stuff
-                                    // todo then come back
-                                }else {
-                                    // TODO lets remove the seconds if we are over 60 minutes and show hr/min.
-                                    setMinutes((int)(countDownTime/1000/60));
-
-                                }
-                            }
-                        });
-                    } catch (Exception e) {
-                        // TODO: handle exception
-                    }
-                }
-            }
-        });
+        // create new thread and start
+        mTimerThread = new ThreadTimer(handler, this, countDownTime);
         mTimerThread.start();
     }
-    //TODO stoped here setting up a thread to run when tyhe start button shows, the thread will continue to count down
 
     @Override
     protected void onDestroy() {
@@ -318,7 +322,7 @@ public class MainActivity extends Activity{
         Log.d(TAG, message);
     }
 
-
+    // Toggles the Dismiss Overlay
     public void hideLayout(boolean hide){
         if(hide){
             btvMinToHr.setVisibility(View.GONE);
@@ -339,11 +343,17 @@ public class MainActivity extends Activity{
             tvMin.setVisibility(View.VISIBLE);
             tvColon.setVisibility(View.VISIBLE);
             flLayout.setVisibility(View.VISIBLE);
-
             llDismissalOverlay.setVisibility(View.GONE);
         }
     }
 
+    // When the thread is counting time or when it is done we call these.
+    protected void setHrTitle(String title){
+        tvHr.setText(title);
+    }
+    protected void setMinTitle(String title){
+        tvMin.setText(title);
+    }
 
     @Override
     protected void onStart() {
@@ -351,5 +361,9 @@ public class MainActivity extends Activity{
         IntentFilter intentKillThread = new IntentFilter("Cancel_Timer");
         registerReceiver(brKillThread, intentKillThread);
     }
-
+    // called by thread to reset everything
+    public void resetHourAndMinute() {
+        mTimerView.setMinutes(0);
+        mTimerView.setHours(0);
+    }
 }
