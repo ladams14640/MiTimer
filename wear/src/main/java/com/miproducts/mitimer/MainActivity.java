@@ -5,8 +5,10 @@ import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -51,6 +53,19 @@ public class MainActivity extends Activity{
     int convertToSecs = 1000;
 
     boolean isAlarmSet = false;
+
+    // tell us to kill thread
+    final BroadcastReceiver brKillThread = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            log("brKillThread Received Message");
+          handler.removeCallbacks(mTimerThread);
+            finish();
+        }
+    };
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,7 +125,6 @@ public class MainActivity extends Activity{
         bStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO set the boolean value and handle according
                 setupTimer(mTimerView.getSetMinutes(), mTimerView.getSetHours());
                 countDownTime = mTimerView.getSetMinutes()*(60*1000);
                 beginCountDownThread();
@@ -139,7 +153,8 @@ public class MainActivity extends Activity{
 
     private void beginCountDownThread() {
         countDownTime = mTimerView.getSetMinutes()*1000*60;
-
+        // remove prior threads
+        handler.removeCallbacks(mTimerThread);
         mTimerThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -181,6 +196,7 @@ public class MainActivity extends Activity{
     @Override
     protected void onDestroy() {
         handler.removeCallbacks(mTimerThread);
+        unregisterReceiver(brKillThread);
         super.onDestroy();
 
     }
@@ -256,7 +272,6 @@ public class MainActivity extends Activity{
 
 
         }
-
     /**
      * Took this from Timer sample project
      * Cancels an old countdown and deletes the dataItem.
@@ -328,4 +343,13 @@ public class MainActivity extends Activity{
             llDismissalOverlay.setVisibility(View.GONE);
         }
     }
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        IntentFilter intentKillThread = new IntentFilter("Cancel_Timer");
+        registerReceiver(brKillThread, intentKillThread);
+    }
+
 }
