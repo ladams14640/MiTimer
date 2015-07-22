@@ -25,7 +25,8 @@ public class TimePreferenceSaved {
     protected void saveAlarmTime(long timeForAlarm){
         Log.d("TimePreference", "saved alarm");
         mEditor.putLong(KEY_ALARM_TIME, timeForAlarm);
-        mEditor.apply(); 
+        //TODO #1 i ended here, trouble with preference
+        mEditor.apply();
         mEditor.commit();
     }
 
@@ -39,7 +40,7 @@ public class TimePreferenceSaved {
 
         long alarmTime = mPrefs.getLong(KEY_ALARM_TIME, 0);
         Log.d("TimePreference", "AlarmTime pulled out is " + alarmTime);
-        alarmTime-=currentTime;
+        alarmTime = alarmTime - currentTime;
         if(alarmTime <= 0){
             // might as well save it as such.
             saveAlarmTime(0);

@@ -140,7 +140,8 @@ public class MainActivity extends Activity{
             public void onClick(View v) {
                 setupTimer(mTimerView.getSetMinutes(), mTimerView.getSetHours());
                 countDownTime = mTimerView.getSetMinutes()*(60*1000);
-                prefClass.saveAlarmTime(countDownTime);
+                // save the time
+                prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
                 beginCountDownThread();
                 //finish();
             }
