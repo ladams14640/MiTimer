@@ -16,6 +16,8 @@ package com.miproducts.mitimer.util;
  * limitations under the License.
  */
 
+import java.util.Dictionary;
+
 /** Helper class to format the timer. Based on com.android.deskclock.timer.CountingTimerView. */
 public final class TimerFormat {
 
@@ -118,4 +120,23 @@ public final class TimerFormat {
         return String.format("%s:%s:%s", mHours, mMinutes, mSeconds);
 
     }
+
+
+    public static TimeKeeper breakDownMilliSeconds(long milliseconds){
+        float minutes = milliseconds/1000/60;
+        float seconds =0;
+        float hour = 0;
+        // minutes are less than 60 minutes (less than 1 hr)
+        if(minutes < 60){
+            seconds = milliseconds/1000%60;
+
+        }
+        // there is more than an hour.
+        else {
+            hour = milliseconds/1000/60/60;
+            minutes = milliseconds/1000/60%60;
+        }
+        return new TimeKeeper(hour,minutes,seconds);
+    }
+
 }

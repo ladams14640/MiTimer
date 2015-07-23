@@ -50,6 +50,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import com.miproducts.mitimer.util.Constants;
+import com.miproducts.mitimer.util.TimeKeeper;
 import com.miproducts.mitimer.util.TimeValuesAndPressCalculator;
 import com.miproducts.mitimer.util.TimerFormat;
 
@@ -352,11 +353,9 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
             case MotionEvent.ACTION_DOWN:
                 xDown = event.getX();
                 yDown = event.getY();
-                // lets move the arc - TETS 7/22/15
-                testJoyStick.processTouch(event.getX(), event.getY());
+
                 // cancel the Runnables incase.
                 handLongPress.removeCallbacks(mLongPressed);
-                handVeryLongPress.removeCallbacks(mVeryLongPressed);
                 // lets set a Runnable if we reach the 1 second
                 handLongPress.postDelayed(mLongPressed, Constants.THRESHOLD_LONGPRESS);
 
@@ -364,14 +363,11 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
                 if(rectdismiss.contains((int)xDown,(int)yDown)){
                     // since i did the above we want to remove incase.
                     handLongPress.removeCallbacks(mVeryLongPressed);
-                    handLongPress.removeCallbacks(mLongPressed);
-                    handLongPress.postDelayed(mVeryLongPressed, Constants.THRESHOLD_LONGPRESS);
+                    handLongPress.postDelayed(mVeryLongPressed, Constants.THRESHOLD_VERY_LONGPRESS);
+                    return true;
                 }
-
-
-
                 // isTouch in the minute spot on the screen
-                if (rectSecsToMin.contains((int) event.getX(), (int) event.getY())) {
+                else if (rectSecsToMin.contains((int) event.getX(), (int) event.getY())) {
                     mActivity.btvSecsToMin.setSelectedState(true);
                     mActivity.btvMinToHr.setSelectedState(false);
                     isHour = false;
@@ -446,6 +442,28 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
     public boolean onLongClick(View v) {
         log("long click");
         return true;
+    }
+    // the underlining data is set in setHours and setMinutes.
+    public void adjustTimeBasedOffOfPreferences() {
+        log("adjustTimeBasedOffOfPrefernces");
+        long timeCountDown = mActivity.getTimeInPrefs();
+        if( timeCountDown > 0){
+            // has HR, MIN, SEC stored in it
+            TimeKeeper timeKeeper = TimerFormat.breakDownMilliSeconds(timeCountDown);
+            // we do have hours
+            if(timeKeeper.getHr() != 0){
+                setHours((int)timeKeeper.getHr());
+                setMinutes((int) timeKeeper.getMin());
+                log("hours is = " + timeKeeper.getHr() + " minutes is = " + timeKeeper.getMin());
+
+            }
+            // only minutes and seconds
+            else {
+                log("minute is = " + timeKeeper.getMin() + " seconds is = " +timeKeeper.getSec());
+                setHours((int) timeKeeper.getMin());
+                setMinutes((int) timeKeeper.getSec());
+            }
+        }
     }
 
 
@@ -568,17 +586,17 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
         }
     }
 
-
+    // tell activity to set the borderTextView
     public void setMinutes(int minutes){
         minuteSets = minutes;
         mActivity.setMinutes(minutes);
-    }
 
+    }
+    // tell activity to set the borderTextView
     public void setHours(int hours){
         hourSets = hours;
         mActivity.setHours(hours);
     }
-
 
     public int getSetMinutes(){
         return minuteSets;

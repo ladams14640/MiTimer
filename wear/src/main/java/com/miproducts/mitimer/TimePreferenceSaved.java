@@ -23,22 +23,20 @@ public class TimePreferenceSaved {
     }
     // save the alarm time, called when alarm is made. Or when it is done.
     protected void saveAlarmTime(long timeForAlarm){
-        Log.d("TimePreference", "saved alarm");
+        log("saved alarm with value of "+ timeForAlarm);
         mEditor.putLong(KEY_ALARM_TIME, timeForAlarm);
-        //TODO #1 i ended here, trouble with preference
         mEditor.apply();
         mEditor.commit();
     }
 
-    // grab the last alarm,
     protected long getAlarmTime(){
+        log("gotAlarmTime with time of "+ mPrefs.getLong(KEY_ALARM_TIME,0));
         return mPrefs.getLong(KEY_ALARM_TIME, 0);
     }
-    // TODO have not tested yet, we want to check the alarm when we start activity.
-    // TODO if there is time left set the time according.
-    protected long computeTimeLeftOnAlarm(long currentTime){
 
+    protected long computeTimeLeftOnAlarm(long currentTime){
         long alarmTime = mPrefs.getLong(KEY_ALARM_TIME, 0);
+        log("computeTime with alarmTime" + alarmTime);
         Log.d("TimePreference", "AlarmTime pulled out is " + alarmTime);
         alarmTime = alarmTime - currentTime;
         if(alarmTime <= 0){
@@ -48,6 +46,10 @@ public class TimePreferenceSaved {
         }else {
             return alarmTime;
         }
+    }
+
+    private void log(String s) {
+        Log.d("TimePreferenceSave", s);
     }
 
 

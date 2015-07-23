@@ -15,11 +15,14 @@ public class ThreadTimer extends Thread
     private MainActivity mActivity;
     // count down
     private long timeCountDown;
+    // minute count down
+    private int countDownInMinutes;
     // Keep track if we are running to kill thread.
     private boolean isRunning = true;
     // set the TextViews
     private boolean isTitleSet = false;
-
+    // user initiated a pause
+    private boolean pausing = false;
 
 
     ThreadTimer(Handler mHandler,MainActivity mActivity, long startingTime){
@@ -40,7 +43,16 @@ public class ThreadTimer extends Thread
                     @Override
                     public void run() {
                         // get the time
-                        int countDownInMinutes = (int)timeCountDown/1000/60;
+                        countDownInMinutes = (int)timeCountDown/1000/60;
+                        if(pausing){
+                            mActivity.saveTimeInPrefs(timeCountDown);
+                            // tell timerView it's underlining datahas changed
+                            mActivity.informTimerViewOfDataChange();
+
+                            isRunning = false;
+                            return;
+                        }
+
                         // the alarm is less than 60 mins - lets have put min and seconds in
                         // hour and minutes.
                         if(countDownInMinutes < 60) {
@@ -96,17 +108,40 @@ public class ThreadTimer extends Thread
     }
 
     private void killThread() {
-        mActivity.setMinutes(0);
-        mActivity.setHours(0);
-        mActivity.setHrTitle(HR);
-        mActivity.setMinTitle(MIN);
-        isTitleSet = false;
-        //countDownInMinutes = 0;
-        timeCountDown = 0;
-        mActivity.resetHourAndMinute();
+        isRunning = false;
+        // dont reset any of this if we are just pausing.
+        if(pausing){
+            pausing = false;
+            try {
+                join(10);
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }else {
+            mActivity.setMinutes(0);
+            mActivity.setHours(0);
+            mActivity.setHrTitle(HR);
+            mActivity.setMinTitle(MIN);
+            isTitleSet = false;
+            //countDownInMinutes = 0;
+            timeCountDown = 0;
+            mActivity.resetHourAndMinute();
+            mActivity.resetPrefAlarmTime();
+        }
+
     }
 
     protected void cancelRunning() {
         isRunning = false;
+    }
+
+    protected boolean isRunning(){
+        return isRunning;
+    }
+
+    // lets tell thread to save stuff
+    public void pauseRunning() {
+        pausing = true;
     }
 }

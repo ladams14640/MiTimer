@@ -14,6 +14,8 @@ import android.util.SparseArray;
 public class AlarmReceiver extends BroadcastReceiver
 {
 
+    private TimePreferenceSaved mPrefSaved;
+
     @Override
     public void onReceive(Context context, Intent intent)
     {
@@ -24,6 +26,8 @@ public class AlarmReceiver extends BroadcastReceiver
         wl.acquire(3000);
         Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         vibrator.vibrate(3000);
+        mPrefSaved = new TimePreferenceSaved(context);
+        mPrefSaved.saveAlarmTime(0);
         Log.d("AlarmReceiver", "onReceived");
     }
 }
