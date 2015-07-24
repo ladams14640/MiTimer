@@ -98,6 +98,9 @@ public class TimerNotificationService extends IntentService {
         PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
         alarm.cancel(pendingIntent);
+        // set alarm to 0
+        TimePreferenceSaved prefs = new TimePreferenceSaved(getApplicationContext());
+        prefs.saveAlarmTime(0);
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Timer deleted.");

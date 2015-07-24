@@ -56,7 +56,7 @@ public class BorderTextView extends TextView {
         if(height == 0){
             width = 66;
             height = getHeight();
-            Log.d("BorderTextView", "Width = " + width);
+           // Log.d("BorderTextView", "Width = " + width);
         }
 
         if(height != 0){

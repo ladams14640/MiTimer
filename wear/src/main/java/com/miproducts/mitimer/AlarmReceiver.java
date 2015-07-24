@@ -21,13 +21,18 @@ public class AlarmReceiver extends BroadcastReceiver
     {
         Intent service1 = new Intent(context, MainActivity.class);
         context.startService(service1);
+
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tag");
         wl.acquire(3000);
+
         Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         vibrator.vibrate(3000);
+
+        // make sure we save the the alarm time in preference to 0
         mPrefSaved = new TimePreferenceSaved(context);
         mPrefSaved.saveAlarmTime(0);
+
         Log.d("AlarmReceiver", "onReceived");
     }
 }

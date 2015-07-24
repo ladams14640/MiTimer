@@ -38,7 +38,7 @@ public class TimePreferenceSaved {
         long alarmTime = mPrefs.getLong(KEY_ALARM_TIME, 0);
         log("computeTime with alarmTime" + alarmTime);
         Log.d("TimePreference", "AlarmTime pulled out is " + alarmTime);
-        alarmTime = alarmTime - currentTime;
+        //alarmTime = alarmTime - currentTime;
         if(alarmTime <= 0){
             // might as well save it as such.
             saveAlarmTime(0);

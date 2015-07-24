@@ -207,7 +207,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
     // Create the Arc that will display the representation of number current desired selection
     // this is whether we are adjusting Hours, Minutes, or Deeper Minutes.
     private void initArc(){
-        log("initArcs");
+        //log("initArcs");
         mRectF = new RectF(xHalf-125, yHalf-125, xHalf+125, yHalf+125);
         mTicArc = new TicArc(mContext, mRectF, 2);
         invalidate();
@@ -319,7 +319,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
         public void run() {
             //vibrate(true);
 
-            log("VeryLong press!");
+           // log("VeryLong press!");
             mActivity.hideLayout(true);
             invalidate();
             // SHOULD LIGHT VIBRATE
@@ -371,7 +371,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
                     mActivity.btvSecsToMin.setSelectedState(true);
                     mActivity.btvMinToHr.setSelectedState(false);
                     isHour = false;
-                    log("secsToMin Touched");
+                  //  log("secsToMin Touched");
                     invalidate();
                     return true;
 
@@ -381,7 +381,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
                     mActivity.btvMinToHr.setSelectedState(true);
                     mActivity.btvSecsToMin.setSelectedState(false);
                     isHour = true;
-                    log("minToHour Touched");
+                  //  log("minToHour Touched");
                     invalidate();
 
                     return true;
@@ -440,7 +440,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
 
     @Override
     public boolean onLongClick(View v) {
-        log("long click");
+     //   log("long click");
         return true;
     }
     // the underlining data is set in setHours and setMinutes.
@@ -514,7 +514,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
 
-            log("Tic onDraw");
+          //  log("Tic onDraw");
                // log("drawing Tic Arc with start Angle of " + mStartAngle);
                 // we will pass in the startAngle, always increase by 1 degree.
             if(!isHour) {
@@ -532,7 +532,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
 
         // this method is called in the JoyStick's movement, to set the arc's value and invalidate.
         public void adjustArcSize(float theta) {
-            log("adjust arc size");
+         //   log("adjust arc size");
             if(!isHour){
                 if(!isLongPress)
                     mSwingAngleMin = convertThetaToArcDegrees(theta);
@@ -578,8 +578,14 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
 
         }
 
+        /**
+         * Reset the 3 types of Arcs that we could potentially display.
+         * 1. regular arc for regular minutes.
+         * 2. hourly arc for hour display.
+         * 3. deep minute arc for when the user has toggled deep minute.
+         */
         public void resetArc(){
-            log("Tic Arc resetArc");
+         //   log("Tic Arc resetArc");
             mSwingAngleMin = 1;
             mSwingAngleDeepMin = 1;
             mSwingAngleHr = 1;
@@ -610,7 +616,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
         mTicArc.mSwingAngleMin = swingAngle;
     }
     public void resetArc(){
-        log("reset Arc");
+     //   log("reset Arc");
         mTicArc.resetArc();
         invalidate();
     }

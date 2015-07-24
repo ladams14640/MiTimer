@@ -66,9 +66,8 @@ public class MainActivity extends Activity{
     private final Handler handler = new Handler();
     private ThreadTimer mTimerThread;
 
-    // AlarmTime from preference, minus current system time (eventually)
-    private long prefAlarmTime = 0;
-
+    // keep track of the display time broken down
+    private TimeKeeper timeKeeper;
 
     // tell us to kill thread - from notification
 
@@ -86,6 +85,9 @@ public class MainActivity extends Activity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // get a copy of the preference handling object and preferences
+        prefClass = new TimePreferenceSaved(this);
 
         final WatchViewStub stub = (WatchViewStub) findViewById(R.id.watch_view_stub);
         stub.setOnLayoutInflatedListener(new WatchViewStub.OnLayoutInflatedListener() {
@@ -116,6 +118,7 @@ public class MainActivity extends Activity{
 
 
                 initTextViews();
+                // grab old time compare to now and handle according.
                 grabCurrentAlarmTime();
 
 
@@ -137,59 +140,77 @@ public class MainActivity extends Activity{
     private void initButtons() {
         bStart = (Button) findViewById(R.id.bStart);
         bReset = (Button) findViewById(R.id.bReset);
-    //TODO #FIX THIS SHIT - did alot of complicated work for nothing ti appears
-    // TODO everytime I unpause I start back originally at the time prior and not the new time.
+
+        /**
+         * 3 SCENARIOS:
+            * Scenario #1 - (Start) last saved  alarm in preference is 0:
+         *  1.1 isAlarmSet = true;
+         *  1.2 grab values from M_TIMER_VIEW
+         *  1.3 setup notification Timer & Alarm Timer
+         *  1.4 Setup Timer Thread
+            * Scenario #2 - (Start) last saved alarm in preference is above 0:
+         *  2.1 isAlarmSet = true;
+         *  2.2 grab values from PREFS
+         *  2.3 setup notification Timer & Alarm Timer
+         *  2.4 Setup Timer Thread
+            * Scenario #3 - (Pause) we are pausing:
+         *  3.1 isAlarm = false;
+         *  3.2 save prefs and alarm
+         *  3.3 Stop thread
+         *  3.4 kill alarm & kill notification.
+         */
         bStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // no alarm is set or is paused
+                // Scenario #1 and #2
                 if(!isAlarmSet){
+                    log("Start");
+                    // either way these need to get done
+                    bStart.setText("Pause");
+                    isAlarmSet = true;
+                    // get the alarmTime - still need to add it to the system time to get the countdown time
+                    long alarmTime = prefClass.getAlarmTime();
+                    log("got alarmTime from preference " + alarmTime);
+
+                    // Scenario #2
                     // preference had something saved.
-                    if(prefClass.getAlarmTime() != 0){
-                        TimeKeeper timeKeeper = TimerFormat.breakDownMilliSeconds(prefClass.getAlarmTime() + System.currentTimeMillis());
+                    if(alarmTime != 0){
+                        // get HR, MIN, SEC for display.
+                        timeKeeper = TimerFormat.breakDownMilliSeconds(alarmTime);
+                        //TODO #ISSUE when we unPause mins and secs become hrs and mins.
                         // there was hrs stored.
                         if(timeKeeper.getHr() != 0) {
-                            setupTimer((int)timeKeeper.getMin(), (int)timeKeeper.getHr());
-                            //inefficient convert back but w/e atm
-                            countDownTime = (int)timeKeeper.getMin()*1000*60;
-                            countDownTimeHours = (int)timeKeeper.getHr()*1000&60*60;
-                            prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
+                            log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
+                            //TODO was getMin() and getHr() - want to see if i can fixm y shit.
+                            setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
+                            //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
                         }
                         // there was minutes and seconds stored.
                         else{
-                            setupTimer((int)timeKeeper.getSec(),(int)timeKeeper.getMin());
+                            log("Minute and Seconds of the timeKeeper is " + (int) timeKeeper.getMin() + " " + (int) timeKeeper.getSec());
+
+                            setupTimer(false, (int) timeKeeper.getSec(), (int) timeKeeper.getMin());
                         }
                     }
+
                     // preference had nothing saved.
                     else {
                         // setup Alarm
-                        setupTimer(mTimerView.getSetMinutes(), mTimerView.getSetHours());
-                        // set the countdown time by grabbing the minutes from the TimerView
-                        // get the time - its in a whole number 12 minutes or 50 minutes - turn it into milliseconds
-                        countDownTime = mTimerView.getSetMinutes()*(60*1000);
-                        countDownTimeHours = (mTimerView.getSetHours()*1000*60*60);
-                        // save the time
-                        prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
+                        setupTimer(true, mTimerView.getSetMinutes(), mTimerView.getSetHours());
                     }
 
-                    // Begin the thread for showing user on screen change in time.
-                    beginCountDownThread();
-                    //finish();
-                    // set this to Pause Title
-                    bStart.setText("Pause");
-                    isAlarmSet = true;
                 }
-                // Alarm was already set, assume that we just clicked on Stop
+                // Alarm was already set, assume that we just clicked to Pause
                 //TODO # make sure we pause notification if we keep it!
                 else {
-                    // TODO need to set isAlarm in MainActivity when we come back
+                    log("Pause");
+
                     isAlarmSet = false;
-                    // assuming thread is still going if we had an alarm going
-                    // if we are able to cancel it before removecallback i know we will save the remainder of time. - lets hope this works
+                    // thread will save to prefs the remaining time.
                     if(mTimerThread != null)
                         if(mTimerThread.isRunning())
                             mTimerThread.pauseRunning();
-                    handler.removeCallbacks(mTimerThread);
+                    //handler.removeCallbacks(mTimerThread);
                     mTimerThread = null;
                     //TODO not saving the time, this may cause issues! if we pause then leave - solution above perhaps with immediatel conditional above.
                     bStart.setText("Start");
@@ -207,57 +228,69 @@ public class MainActivity extends Activity{
 
                 btvSecsToMin.setText("0");
                 btvMinToHr.setText("0");
-                mTimerThread.cancelRunning();
+                if(mTimerThread != null)
+                    mTimerThread.cancelRunning();
                 handler.removeCallbacks(mTimerThread);
                 mTimerThread = null;
+                isAlarmSet = false;
+                bStart.setText("Start");
 
             }
         });
     }
-
+    //TODO #2 dont accept touches on the arc when its countdown time.
 
 
     // grab old alarmtime and compare to now
     private void grabCurrentAlarmTime() {
         log("grabCurrentAlarm");
-        prefClass = new TimePreferenceSaved(this);
-        prefAlarmTime = prefClass.computeTimeLeftOnAlarm(System.currentTimeMillis());
-        // if the time difference hasn't passed then we can
-        //TODO we probably want to set this preference with a complete broadcastReceiver call
-        // TODO that way it will be 0 when we come back
-        if(prefAlarmTime > 0){
-            log("greater than 0");
 
-            //if(mTimerThread == null){
-                // set buttons String to pause
-                bStart.setText("Pause");
-                beginCountDownThread();
-            //}
-        }else {
-            // elapsed time, no big deal just set to start.
+        // get the alarmTime - still need to add it to the system time to get the countdown time
+        long alarmTime = prefClass.getAlarmTime();
+        log("got alarmTime from preference " + alarmTime);
+
+        // Something was saved lets startup.
+        if(alarmTime != 0){
+            isAlarmSet = true;
+            bStart.setText("Pause");
+
+            // get HR, MIN, SEC for display.
+            timeKeeper = TimerFormat.breakDownMilliSeconds(alarmTime);
+
+            // there was hrs stored.
+            if(timeKeeper.getHr() != 0) {
+                log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
+
+                setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
+                //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
+            }
+            // there was minutes and seconds stored.
+            else{
+                log("Minute and Seconds of the timeKeeper is " +(int)timeKeeper.getMin() + " " + (int)timeKeeper.getSec());
+
+                setupTimer(false, (int)timeKeeper.getSec(),(int)timeKeeper.getMin());
+            }
+
+        }
+        // nothing saved.
+        else {
+            isAlarmSet = false;
             bStart.setText("Start");
 
-            log("less than or equal to 0");
         }
     }
 
 
 
 
-
-    private void beginCountDownThread() {
-
-        countDownTime += countDownTimeHours;
-        // remove prior thread
-        handler.removeCallbacks(mTimerThread);
-        // create new thread and start
-        mTimerThread = new ThreadTimer(handler, this, countDownTime);
-        mTimerThread.start();
-    }
-
     @Override
     protected void onDestroy() {
         handler.removeCallbacks(mTimerThread);
+        if(mTimerThread != null){
+            mTimerThread.cancelRunning();
+            mTimerThread = null;
+
+        }
         unregisterReceiver(brKillThread);
         super.onDestroy();
 
@@ -265,14 +298,31 @@ public class MainActivity extends Activity{
 
     // Took this from Timer sample project
     // timer stuff all came from Android Timer project sample
-    private void setupTimer(long durSecs, long durMins) {
 
+    /**
+     *
+     * @param isHourSet - if there was hours
+     * @param durSecs
+     * @param durMins
+     */
+    private void setupTimer(boolean isHourSet, long durSecs, long durMins) {
 
+        long fullTime = 0;
         log("duration =" + durSecs);
-        long durationMillisSecs = durSecs * convertToSecs * min;
-        long durationMillisMin = durMins * convertToSecs * min * hr;
-        long fullTime = durationMillisSecs + durationMillisMin;
+        if(isHourSet){
+            long durationMillisSecs = durSecs * convertToSecs * min;
+            long durationMillisMin = durMins * convertToSecs * min * hr;
+            fullTime = durationMillisSecs + durationMillisMin;
+        }else {
+            long durationMillisSecs = durSecs * convertToSecs;
+            long durationMillisMin = durMins * convertToSecs * min;
+            fullTime = durationMillisSecs + durationMillisMin;
+        }
 
+
+        // saveprefs
+        log("saving in SetupTimer");
+        //prefClass.saveAlarmTime(fullTime);
 
         NotificationManager notifyMgr =
                 ((NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE));
@@ -286,10 +336,21 @@ public class MainActivity extends Activity{
         // Register with the alarm manager to display a notification when the timer is done.
         registerWithAlarmManager(fullTime);
 
+        if(mTimerThread != null){
+            mTimerThread.cancelRunning();
+            // remove prior thread
+            handler.removeCallbacks(mTimerThread);
+
+        }
+        // create new thread and start
+        mTimerThread = new ThreadTimer(handler, this, fullTime);
+        mTimerThread.start();
+
+
     }
 
     private void stopAlarm() {
-        log("canceled");
+        log("stopped Alarm");
         Intent myIntent = new Intent(MainActivity.this, AlarmReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, myIntent,0);
 
@@ -377,6 +438,7 @@ public class MainActivity extends Activity{
     }
 
     public void setMinutes(int minutes){
+        log("setMinutes with " + minutes);
         btvSecsToMin.setText(Integer.toString(minutes));
         //mTimerView.setMinutes(minutes);
     }
@@ -441,13 +503,16 @@ public class MainActivity extends Activity{
     }
     // called by the thread to save time when pausing.
     public void saveTimeInPrefs(long countDownInMinutes) {
+        log("saving alarmTime in saveTimeInPrefs");
         prefClass.saveAlarmTime(countDownInMinutes);
     }
 
     public void informTimerViewOfDataChange() {
+        log("informTimerViewOfDataChange");
        mTimerView.adjustTimeBasedOffOfPreferences();
     }
     public long getTimeInPrefs(){
+        log("getTimeInPrefs");
         return prefClass.computeTimeLeftOnAlarm(System.currentTimeMillis());
     }
 /*
