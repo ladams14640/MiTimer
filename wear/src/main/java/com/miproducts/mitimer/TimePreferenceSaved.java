@@ -10,7 +10,10 @@ import android.util.Log;
  * Created by larry on 7/22/15.
  */
 public class TimePreferenceSaved {
+    // keep track of the alarm time
     public static final String KEY_ALARM_TIME = "KEY_ALARM_TIME";
+
+    public static final String KEY_ALARM_PLAYING = "KEY_ALARM_PLAYING";
 
     private SharedPreferences mPrefs;
     private SharedPreferences.Editor mEditor;
@@ -30,7 +33,7 @@ public class TimePreferenceSaved {
     }
 
     protected long getAlarmTime(){
-        log("gotAlarmTime with time of "+ mPrefs.getLong(KEY_ALARM_TIME,0));
+        log("gotAlarmTime with time of " + mPrefs.getLong(KEY_ALARM_TIME, 0));
         return mPrefs.getLong(KEY_ALARM_TIME, 0);
     }
 
@@ -47,6 +50,21 @@ public class TimePreferenceSaved {
             return alarmTime;
         }
     }
+
+    // grab last time if we were paused.
+    protected boolean wasPlaying(){
+        return mPrefs.getBoolean(KEY_ALARM_PLAYING, false);
+    }
+
+    // set whether we were paused.
+    protected void setPlaying(boolean isPlaying){
+        mEditor.putBoolean(KEY_ALARM_PLAYING, isPlaying);
+        mEditor.apply();
+        mEditor.commit();
+    }
+
+
+
 
     private void log(String s) {
         Log.d("TimePreferenceSave", s);

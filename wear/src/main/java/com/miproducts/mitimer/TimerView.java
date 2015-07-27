@@ -274,31 +274,8 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
                 bm, 0, 0, width, height, matrix, false);
         return resizedBitmap;
     }
-        //TODO remove switch
         @Override
         public boolean onTouchEvent(MotionEvent event){
-            switch(event.getAction()){
-                case MotionEvent.ACTION_DOWN:
-                    //testJoyStick.processTouch(event.getX(), event.getY());
-                    //invalidate();
-                  //  log("TimerView onTouchEvent - Action Down");
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                  // testJoyStick.processTouch(event.getX(), event.getY());
-                  //  invalidate();
-                    //log("TimerView onTouchEvent - Action MOVE");
-                    break;
-                case MotionEvent.ACTION_UP:
-                    //log("TimerView onTouchEvent - Action UP");
-                //    testJoyStick.processTouch(0, 0);
-                //    invalidate();
-                    break;
-                case MotionEvent.ACTION_CANCEL:
-                //    testJoyStick.processTouch(0, 0);
-                 //   invalidate();
-                    //log("TimerView onTouchEvent - Action CANCEL");
-                    break;
-            }
             // this being true allows us to pass the touches all to the onTouch - which has the view
             return true;
         }
@@ -318,10 +295,12 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
     Runnable mVeryLongPressed = new Runnable() {
         public void run() {
             //vibrate(true);
+               // log("VeryLong press!");
+                mActivity.hideLayout(true);
+                //handLongPress.removeCallbacks(mLongPressed);
+                invalidate();
 
-           // log("VeryLong press!");
-            mActivity.hideLayout(true);
-            invalidate();
+
             // SHOULD LIGHT VIBRATE
         }
     };
@@ -348,71 +327,87 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
     public boolean onTouch(View v, MotionEvent event) {
         //log("TimerViews onTOuchListener");
         //log("onTouch id of view is " + v.getId());
+            switch(event.getAction()){
+                case MotionEvent.ACTION_DOWN:
+                    xDown = event.getX();
+                    yDown = event.getY();
 
-        switch(event.getAction()){
-            case MotionEvent.ACTION_DOWN:
-                xDown = event.getX();
-                yDown = event.getY();
-
-                // cancel the Runnables incase.
-                handLongPress.removeCallbacks(mLongPressed);
-                // lets set a Runnable if we reach the 1 second
-                handLongPress.postDelayed(mLongPressed, Constants.THRESHOLD_LONGPRESS);
-
-                // check and make sure we are in the center for a dismiss action
-                if(rectdismiss.contains((int)xDown,(int)yDown)){
-                    // since i did the above we want to remove incase.
-                    handLongPress.removeCallbacks(mVeryLongPressed);
-                    handLongPress.postDelayed(mVeryLongPressed, Constants.THRESHOLD_VERY_LONGPRESS);
-                    return true;
-                }
-                // isTouch in the minute spot on the screen
-                else if (rectSecsToMin.contains((int) event.getX(), (int) event.getY())) {
-                    mActivity.btvSecsToMin.setSelectedState(true);
-                    mActivity.btvMinToHr.setSelectedState(false);
-                    isHour = false;
-                  //  log("secsToMin Touched");
-                    invalidate();
-                    return true;
-
-                }
-                // isTouch in the hr spot on the screen
-                else if (rectMinToHour.contains((int) event.getRawX(), (int) event.getRawY())) {
-                    mActivity.btvMinToHr.setSelectedState(true);
-                    mActivity.btvSecsToMin.setSelectedState(false);
-                    isHour = true;
-                  //  log("minToHour Touched");
-                    invalidate();
-
-                    return true;
-                }
-                else {
-                      // lets move the arc
-                      testJoyStick.processTouch(event.getX(), event.getY());
-                  }
-                    invalidate();
-
-                break;
-            case MotionEvent.ACTION_MOVE:
-                xMove = event.getX();
-                yMove = event.getY();
-
-                // remove the longPressHandler
-                float dist = Math.abs((xMove - xDown) + (yMove - yDown));
-                if(dist > 50){
+                    // cancel the Runnables incase.
                     handLongPress.removeCallbacks(mLongPressed);
                     handVeryLongPress.removeCallbacks(mVeryLongPressed);
-                }
 
-                testJoyStick.processTouch(event.getX(), event.getY());
-                invalidate();
-                return true;
-            case MotionEvent.ACTION_UP:
-                fingerOff();
-                return true;
-            case MotionEvent.ACTION_CANCEL:
-                fingerOff();
-                return true;        }
+                    /* Put dismiss here, so we can control. So user can still exit app while timer is going. */
+                    // check and make sure we are in the center for a dismiss action
+                    if(rectdismiss.contains((int)xDown,(int)yDown)){
+                       //isLongPress = true;
+                        // since i did the above we want to remove incase.
+                        handVeryLongPress.removeCallbacks(mVeryLongPressed);
+                        handVeryLongPress.postDelayed(mVeryLongPressed, Constants.THRESHOLD_VERY_LONGPRESS);
+                        return true;
+                    }
+
+
+
+                    // if timer is going  don't register touches.
+                    if(!mActivity.wasPlaying()) {
+                        // cancel the Runnables incase.
+                        handLongPress.removeCallbacks(mLongPressed);
+                        // lets set a Runnable if we reach the 1 second
+                        handLongPress.postDelayed(mLongPressed, Constants.THRESHOLD_LONGPRESS);
+
+                        // isTouch in the minute spot on the screen
+                        if (rectSecsToMin.contains((int) event.getX(), (int) event.getY())) {
+                            mActivity.btvSecsToMin.setSelectedState(true);
+                            mActivity.btvMinToHr.setSelectedState(false);
+                            isHour = false;
+                            //  log("secsToMin Touched");
+                            invalidate();
+                            return true;
+
+                        }
+                        // isTouch in the hr spot on the screen
+                        else if (rectMinToHour.contains((int) event.getRawX(), (int) event.getRawY())) {
+                            mActivity.btvMinToHr.setSelectedState(true);
+                            mActivity.btvSecsToMin.setSelectedState(false);
+                            isHour = true;
+                            //  log("minToHour Touched");
+                            invalidate();
+
+                            return true;
+                        }else {
+                            // lets move the arc
+                            testJoyStick.processTouch(event.getX(), event.getY());
+                            invalidate();
+                            return true;
+                        }
+
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    xMove = event.getX();
+                    yMove = event.getY();
+
+                    // if timer is going  don't register touches.
+                    // dismiss
+                    float dist = Math.abs((xMove - xDown) + (yMove - yDown));
+                    // remove dismiss screen thread if distance exceeds a certain amount.
+                    if (dist > 25) {
+                        // remove the longPressHandler
+                        handLongPress.removeCallbacks(mLongPressed);
+                        handVeryLongPress.removeCallbacks(mVeryLongPressed);
+                    }
+                    testJoyStick.processTouch(event.getX(), event.getY());
+                    invalidate();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    log("action_up");
+                    fingerOff();
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    log("action_cancel");
+                    fingerOff();
+                    return true;
+            }
 
         return true;
     }
@@ -426,13 +421,15 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
         tDistance = 0;
         // no longer displaying the Deep Minute Quadrants
         mDeepMinute.setVisibility(false);
-        handVeryLongPress.removeCallbacks(mVeryLongPressed);
-        handLongPress.removeCallbacks(mLongPressed);
 
         if(isLongPress){
             isLongPress = false;
             mTicArc.invalidate();
         }
+        //testJoyStick.processTouch(0, 0);
+        handVeryLongPress.removeCallbacks(mVeryLongPressed);
+        handLongPress.removeCallbacks(mLongPressed);
+
         invalidate();
     }
 

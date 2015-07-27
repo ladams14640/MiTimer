@@ -107,11 +107,15 @@ public class MainActivity extends Activity{
                     // they don't seem to be picked up deep down, even as far down as TimerView
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
-                        // this awakens onInterceptDispatch.
-                        // NOT GETTING ActionEvent.ON_MOVE without this
-                        mTimerView.onTouchEvent(event);
-                        // keep false to keep sending it down the chain and not absorbing.
-                        flLayout.onTouchEvent(event);
+                       // lets make sure we dont mess with the time while it's running.
+
+                            // this awakens onInterceptDispatch.
+                            // NOT GETTING ActionEvent.ON_MOVE without this
+                            mTimerView.onTouchEvent(event);
+                            // keep false to keep sending it down the chain and not absorbing.
+                            flLayout.onTouchEvent(event);
+
+
                         return false;
                     }
                 });
@@ -164,13 +168,13 @@ public class MainActivity extends Activity{
             public void onClick(View v) {
                 // Scenario #1 and #2
                 if(!isAlarmSet){
-                    log("Start");
+                   // log("Start");
                     // either way these need to get done
                     bStart.setText("Pause");
                     isAlarmSet = true;
                     // get the alarmTime - still need to add it to the system time to get the countdown time
                     long alarmTime = prefClass.getAlarmTime();
-                    log("got alarmTime from preference " + alarmTime);
+                    //log("got alarmTime from preference " + alarmTime);
 
                     // Scenario #2
                     // preference had something saved.
@@ -180,14 +184,14 @@ public class MainActivity extends Activity{
                         //TODO #ISSUE when we unPause mins and secs become hrs and mins.
                         // there was hrs stored.
                         if(timeKeeper.getHr() != 0) {
-                            log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
+                            //log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
                             //TODO was getMin() and getHr() - want to see if i can fixm y shit.
                             setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
                             //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
                         }
                         // there was minutes and seconds stored.
                         else{
-                            log("Minute and Seconds of the timeKeeper is " + (int) timeKeeper.getMin() + " " + (int) timeKeeper.getSec());
+                            //log("Minute and Seconds of the timeKeeper is " + (int) timeKeeper.getMin() + " " + (int) timeKeeper.getSec());
 
                             setupTimer(false, (int) timeKeeper.getSec(), (int) timeKeeper.getMin());
                         }
@@ -201,10 +205,10 @@ public class MainActivity extends Activity{
 
                 }
                 // Alarm was already set, assume that we just clicked to Pause
-                //TODO # make sure we pause notification if we keep it!
                 else {
-                    log("Pause");
-
+                    //log("Pause");
+                    cancelCountdownNotification();
+                    prefClass.setPlaying(false);
                     isAlarmSet = false;
                     // thread will save to prefs the remaining time.
                     if(mTimerThread != null)
@@ -222,55 +226,104 @@ public class MainActivity extends Activity{
         bReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                cancelCountdownNotification();
+
+
+                if (mTimerThread != null) {
+                    mTimerThread.cancelRunning();
+                    // keeps resetng the time
+                    mTimerThread.interrupt();
+                }
+                handler.removeCallbacks(mTimerThread);
+                mTimerThread = null;
+                isAlarmSet = false;
+                bStart.setText("Start");
+
                 mTimerView.setMinutes(0);
                 mTimerView.setHours(0);
                 mTimerView.resetArc();
 
                 btvSecsToMin.setText("0");
                 btvMinToHr.setText("0");
-                if(mTimerThread != null)
-                    mTimerThread.cancelRunning();
-                handler.removeCallbacks(mTimerThread);
-                mTimerThread = null;
-                isAlarmSet = false;
-                bStart.setText("Start");
 
+                // redundant since we do this in thread but we will see
+                setMinutes(0);
+                setHours(0);
+                setHrTitle("HR");
+                setMinTitle("MIN");
+                resetHourAndMinute();
+                resetPrefAlarmTime();
+                // end of redundancy
+                prefClass.setPlaying(false);
             }
         });
+    }
+
+    private void cancelCountdownNotification() {
+        //log("CancelCountdownNotificatioj");
+
+        NotificationManager notifyMgr =
+                ((NotificationManager) getSystemService(NOTIFICATION_SERVICE));
+        notifyMgr.cancel(Constants.NOTIFICATION_TIMER_COUNTDOWN);
+
     }
     //TODO #2 dont accept touches on the arc when its countdown time.
 
 
     // grab old alarmtime and compare to now
     private void grabCurrentAlarmTime() {
-        log("grabCurrentAlarm");
+        //log("grabCurrentAlarm");
 
         // get the alarmTime - still need to add it to the system time to get the countdown time
         long alarmTime = prefClass.getAlarmTime();
-        log("got alarmTime from preference " + alarmTime);
+        //log("got alarmTime from preference " + alarmTime);
 
         // Something was saved lets startup.
         if(alarmTime != 0){
-            isAlarmSet = true;
-            bStart.setText("Pause");
-
+          boolean wasPlaying = prefClass.wasPlaying();
+            // was playing so we want to continue playing
             // get HR, MIN, SEC for display.
             timeKeeper = TimerFormat.breakDownMilliSeconds(alarmTime);
 
-            // there was hrs stored.
-            if(timeKeeper.getHr() != 0) {
-                log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
+            if(wasPlaying) {
+                isAlarmSet = true;
+                bStart.setText("Pause");
 
-                setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
-                //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
+
+
+                // there was hrs stored.
+                if (timeKeeper.getHr() != 0) {
+                    //log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
+
+                    setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
+                    //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
+                }
+                // there was minutes and seconds stored.
+                else {
+                    //log("Minute and Seconds of the timeKeeper is " + (int) timeKeeper.getMin() + " " + (int) timeKeeper.getSec());
+
+                    setupTimer(false, (int) timeKeeper.getSec(), (int) timeKeeper.getMin());
+                }
             }
-            // there was minutes and seconds stored.
-            else{
-                log("Minute and Seconds of the timeKeeper is " +(int)timeKeeper.getMin() + " " + (int)timeKeeper.getSec());
+            // was not playing.
+            else {
+                // there was hrs stored.
+                if (timeKeeper.getHr() != 0) {
+                    //log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
 
-                setupTimer(false, (int)timeKeeper.getSec(),(int)timeKeeper.getMin());
+                   // setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
+                    btvMinToHr.setText(Integer.toString((int) timeKeeper.getHr()));
+                    btvSecsToMin.setText(Integer.toString((int)timeKeeper.getMin()));
+                    //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
+                }
+                // there was minutes and seconds stored.
+                else {
+                    log("Minute and Seconds of the timeKeeper is " + (int) timeKeeper.getMin() + " " + (int) timeKeeper.getSec());
+                    btvMinToHr.setText(Integer.toString((int) timeKeeper.getMin()));
+                    btvSecsToMin.setText(Integer.toString((int) timeKeeper.getSec()));
+                   // setupTimer(false, (int) timeKeeper.getSec(), (int) timeKeeper.getMin());
+                }
             }
-
         }
         // nothing saved.
         else {
@@ -287,6 +340,8 @@ public class MainActivity extends Activity{
     protected void onDestroy() {
         handler.removeCallbacks(mTimerThread);
         if(mTimerThread != null){
+            //TODO testing this seem to have a problem when i come back to the app i never saved the last time.
+            saveTimeInPrefs(mTimerThread.getCountDownTime());
             mTimerThread.cancelRunning();
             mTimerThread = null;
 
@@ -308,7 +363,7 @@ public class MainActivity extends Activity{
     private void setupTimer(boolean isHourSet, long durSecs, long durMins) {
 
         long fullTime = 0;
-        log("duration =" + durSecs);
+        //log("duration =" + durSecs);
         if(isHourSet){
             long durationMillisSecs = durSecs * convertToSecs * min;
             long durationMillisMin = durMins * convertToSecs * min * hr;
@@ -317,8 +372,13 @@ public class MainActivity extends Activity{
             long durationMillisSecs = durSecs * convertToSecs;
             long durationMillisMin = durMins * convertToSecs * min;
             fullTime = durationMillisSecs + durationMillisMin;
+
         }
 
+        // TODO might have to delete till we iron out shit.
+        saveTimeInPrefs(fullTime);
+        // playing
+        prefClass.setPlaying(true);
 
         // saveprefs
         log("saving in SetupTimer");
@@ -514,6 +574,10 @@ public class MainActivity extends Activity{
     public long getTimeInPrefs(){
         log("getTimeInPrefs");
         return prefClass.computeTimeLeftOnAlarm(System.currentTimeMillis());
+    }
+
+    public boolean wasPlaying() {
+        return prefClass.wasPlaying();
     }
 /*
     // called by thread to set the data times behind the TimerView

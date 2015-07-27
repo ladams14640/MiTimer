@@ -163,4 +163,8 @@ public class ThreadTimer extends Thread
     public void pauseRunning() {
         pausing = true;
     }
+    /* get the current time. */
+    public long getCountDownTime() {
+        return timeCountDown;
+    }
 }

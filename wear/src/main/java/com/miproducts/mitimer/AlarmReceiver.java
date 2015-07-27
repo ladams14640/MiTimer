@@ -33,6 +33,9 @@ public class AlarmReceiver extends BroadcastReceiver
         mPrefSaved = new TimePreferenceSaved(context);
         mPrefSaved.saveAlarmTime(0);
 
+        // def not paused if we reached the end.
+        mPrefSaved.setPlaying(false);
+
         Log.d("AlarmReceiver", "onReceived");
     }
 }

@@ -692,24 +692,28 @@ public class TimeValuesAndPressCalculator {
 
         // number 25
         if(isFingerInFiftyRange(theta)){
+  //          log("in 50 range");
             mTimerView.setMinutes(startNum);
             mTimerView.setSwingMinute(startSwing); // mSwingAngleMin
             return startSwing;
         }
         // number 26
         else if(isFingerInFiftyFiveRange(theta)){
+//            log("in 55 range");
             mTimerView.setMinutes(startNum+1);
             mTimerView.setSwingMinute(startSwing + Constants.angleDifferential * 1); // mSwingAngleMin
             return startSwing+30;
         }
         // number 27
         else if(isFingerInZeroRange(theta)){
+//            log("in 0 range");
             mTimerView.setMinutes(startNum+2);
             mTimerView.setSwingMinute(startSwing + Constants.angleDifferential * 2); // mSwingAngleMin
             return 0;
         }
         // number 28
         else if(isFingerInFiveRange(theta)){
+            //log("in 5 range");
             mTimerView.setMinutes(startNum+3);
             mTimerView.setSwingMinute(startSwing + Constants.angleDifferential * 3); // mSwingAngleMin
             return 30;

@@ -44,7 +44,7 @@ public class JoyStick {
     }
 
     public void processTouch(float fx, float fy) {
-        log("X is " + fx + "Y is " + fy);
+       // log("X is " + fx + "Y is " + fy);
         if (fx != 0 & fy != 0) {
             moveJoystick(fx, fy);
             //controllingObject.inputThrusters(true);
@@ -61,24 +61,24 @@ public class JoyStick {
     private void moveJoystick(float fx, float fy) {
          dx = (float) fx - ox;
          dy = (float) fy - oy;
-        log("dx = " + dx + " dy = " + dy);
+        //log("dx = " + dx + " dy = " + dy);
         float theta = (float) Math.atan2(dy, dx);
-        log("Theta " + theta);
+        //log("Theta " + theta);
         float dist = (float) Math.sqrt((dx*dx)+(dy*dy));
-        log("Dist " + dist);
+        //log("Dist " + dist);
 
         if(dist > radius){
             fx = (float) (ox + (radius * Math.cos(theta)));
             fy = (float) (oy + (radius * Math.sin(theta)));
-            log("moving joystick cos = " + Math.cos(theta) + " sin = " +  Math.sin(theta));
-            log("fx = " + fx + " fy = " + fy);
+            //log("moving joystick cos = " + Math.cos(theta) + " sin = " +  Math.sin(theta));
+            //log("fx = " + fx + " fy = " + fy);
        }else{
             fx = ox+dx;
             fy = oy+dy;
         }
         jx = fx;
         jy = fy;
-        log("jx, jy = " + jx + ", " + jy);
+        //log("jx, jy = " + jx + ", " + jy);
         mTicArc.adjustArcSize(theta);
     }
 }

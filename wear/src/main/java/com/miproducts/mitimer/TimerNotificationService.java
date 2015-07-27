@@ -98,9 +98,12 @@ public class TimerNotificationService extends IntentService {
         PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
         alarm.cancel(pendingIntent);
+
         // set alarm to 0
         TimePreferenceSaved prefs = new TimePreferenceSaved(getApplicationContext());
         prefs.saveAlarmTime(0);
+        // we arent pausing.
+        prefs.setPlaying(false);
 
         if (Log.isLoggable(TAG, Log.DEBUG)) {
             Log.d(TAG, "Timer deleted.");
@@ -124,6 +127,14 @@ public class TimerNotificationService extends IntentService {
         NotificationManager notifyMgr =
                 ((NotificationManager) getSystemService(NOTIFICATION_SERVICE));
         notifyMgr.cancel(Constants.NOTIFICATION_TIMER_COUNTDOWN);
+        // set alarm to 0
+        TimePreferenceSaved prefs = new TimePreferenceSaved(getApplicationContext());
+        prefs.saveAlarmTime(0);
+        // we arent pausing.
+        prefs.setPlaying(false);
+
+        cancelTimerThread();
+
         if(vibrator != null)
             if(vibrator.hasVibrator())
                 vibrator.cancel();
@@ -154,6 +165,12 @@ public class TimerNotificationService extends IntentService {
                 .setLocalOnly(true)
                 .build();
         notifyMgr.notify(Constants.NOTIFICATION_TIMER_EXPIRED, notif);
+        // set alarm to 0
+        TimePreferenceSaved prefs = new TimePreferenceSaved(getApplicationContext());
+        prefs.saveAlarmTime(0);
+        // we arent pausing.
+        prefs.setPlaying(false);
+
 
     }
 
