@@ -22,6 +22,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.miproducts.mitimer.util.Constants;
 import com.miproducts.mitimer.util.TimeKeeper;
@@ -150,32 +151,27 @@ public class MainActivity extends Activity{
         bReset = (Button) findViewById(R.id.bReset);
 
         /**
-         * 3 SCENARIOS:
-            * Scenario #1 - (Start) last saved  alarm in preference is 0:
-         *  1.1 isAlarmSet = true;
-         *  1.2 grab values from M_TIMER_VIEW
-         *  1.3 setup notification Timer & Alarm Timer
-         *  1.4 Setup Timer Thread
-            * Scenario #2 - (Start) last saved alarm in preference is above 0:
-         *  2.1 isAlarmSet = true;
-         *  2.2 grab values from PREFS
-         *  2.3 setup notification Timer & Alarm Timer
-         *  2.4 Setup Timer Thread
-            * Scenario #3 - (Pause) we are pausing:
-         *  3.1 isAlarm = false;
-         *  3.2 save prefs and alarm
-         *  3.3 Stop thread
-         *  3.4 kill alarm & kill notification.
+         *
+         * We click on start in with 3 possible intentions:
+         * 1. we just set the time we want for an alarm and now start it.
+         * 2. we already started the time and we want to pause it.
+         * 3. it was paused and we want to restart it.
+         *
+         * 1. If alarm is not already set and nothing is saved, we assume to grab time from TimerView's set data, tell Prefs we have set alarm and the boolean as well.
+         * 2. Alarm was already set and we need to pause where we are. cancel countdwn, save isAlarmSet in Prefs, set boolean isAlarmSet to false, kill thread and notification.
+         * 3. check to make sure nothing was saved, and tiem was not adjusted by the TimeViewer's TicArc.  if so initialize setup process.
          */
         bStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // start time
+                // Alarm is not set so start time
                 if(!isAlarmSet){
                    // log("Start");
                     // either way these need to get done
                     bStart.setText("Pause");
+                    //TODO might not need isAlarmSet, just use the preference boolean, since it is relied on by other classes.
                     isAlarmSet = true;
+                    prefClass.setPlaying(true);
                     // get the alarmTime - still need to add it to the system time to get the countdown time
                     long alarmTime = prefClass.getAlarmTime();
                     //log("got alarmTime from preference " + alarmTime);
@@ -200,13 +196,24 @@ public class MainActivity extends Activity{
                         }
                     }
 
-                    // preference had nothing saved.
+                    // preference had nothing saved or time was adjusted.
                     else {
                         // time has not been adjusted anymore, now that time has been set.
                         timeAdjusted = false;
-                        // setup Alarm
-                        setupTimer(true, mTimerView.getSetMinutes(), mTimerView.getSetHours());
+                        // make sure the user didnt just have a 0 in these BTVs.
+                        if(mTimerView.getSetMinutes() != 0 || mTimerView.getSetHours() != 0){
+                            // setup Alarm
+                            setupTimer(true, mTimerView.getSetMinutes(), mTimerView.getSetHours());
+                        }else {
+                            Toast.makeText(getApplication(), "Please set a Time", Toast.LENGTH_SHORT).show();
+                            // turn these
+                            bStart.setText("Start");
+                            prefClass.setPlaying(false);
+                            isAlarmSet = false;
+                        }
                     }
+
+
 
                 }
                 // Alarm was already set, assume that we just clicked to Pause
@@ -215,12 +222,12 @@ public class MainActivity extends Activity{
                     cancelCountdownNotification();
                     prefClass.setPlaying(false);
                     isAlarmSet = false;
+
                     // thread will save to prefs the remaining time.
-                    if(mTimerThread != null)
-                        if(mTimerThread.isRunning())
-                            mTimerThread.pauseRunning();
-                    //handler.removeCallbacks(mTimerThread);
+                    handler.removeCallbacks(mTimerThread);
+                    killThread();
                     mTimerThread = null;
+
                     bStart.setText("Start");
                     stopAlarm();
                 }
@@ -230,31 +237,29 @@ public class MainActivity extends Activity{
         bReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                cancelCountdownNotification();
-
-
+                prefClass.setPlaying(false);
+                // handle thread
                 handler.removeCallbacks(mTimerThread);
                 killThread();
+                // self explanatory
+                cancelCountdownNotification();
 
                 isAlarmSet = false;
+                // no longer are we paused, if we were.
                 bStart.setText("Start");
 
-                mTimerView.setMinutes(0);
-                mTimerView.setHours(0);
                 mTimerView.resetArc();
-
-                btvSecsToMin.setText("00");
-                btvMinToHr.setText("0");
-
-                // redundant since we do this in thread but we will see
+                // reset BorderTextView display's
                 setMinutes(0);
                 setHours(0);
+                // reset title of the two BorderTextViews
                 setHrTitle("HR");
                 setMinTitle("MIN");
+                // reset TimerView's hold on the data it uses to display through the BTVs.
                 resetHourAndMinute();
+                // reset the alarm that is saved in preferences.
                 resetPrefAlarmTime();
-                // end of redundancy
-                prefClass.setPlaying(false);
+
             }
         });
     }
