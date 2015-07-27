@@ -79,6 +79,10 @@ public class MainActivity extends Activity{
             finish();
         }
     };
+    /* Boolean set by user when he begins to set the time with the TicArc, if he has adjusted time
+    we wont start the timer with the saved time, but rather with a new time. This is determined in the
+    Start button's onClick Handler.  */
+    private boolean timeAdjusted = false;
 
 
     @Override
@@ -166,7 +170,7 @@ public class MainActivity extends Activity{
         bStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Scenario #1 and #2
+                // start time
                 if(!isAlarmSet){
                    // log("Start");
                     // either way these need to get done
@@ -176,9 +180,8 @@ public class MainActivity extends Activity{
                     long alarmTime = prefClass.getAlarmTime();
                     //log("got alarmTime from preference " + alarmTime);
 
-                    // Scenario #2
-                    // preference had something saved.
-                    if(alarmTime != 0){
+                    // preference had something saved. and time was not recently adjusted by the user.
+                    if(alarmTime != 0 && !timeAdjusted){
                         // get HR, MIN, SEC for display.
                         timeKeeper = TimerFormat.breakDownMilliSeconds(alarmTime);
                         //TODO #ISSUE when we unPause mins and secs become hrs and mins.
@@ -199,6 +202,8 @@ public class MainActivity extends Activity{
 
                     // preference had nothing saved.
                     else {
+                        // time has not been adjusted anymore, now that time has been set.
+                        timeAdjusted = false;
                         // setup Alarm
                         setupTimer(true, mTimerView.getSetMinutes(), mTimerView.getSetHours());
                     }
@@ -216,7 +221,6 @@ public class MainActivity extends Activity{
                             mTimerThread.pauseRunning();
                     //handler.removeCallbacks(mTimerThread);
                     mTimerThread = null;
-                    //TODO not saving the time, this may cause issues! if we pause then leave - solution above perhaps with immediatel conditional above.
                     bStart.setText("Start");
                     stopAlarm();
                 }
@@ -229,13 +233,9 @@ public class MainActivity extends Activity{
                 cancelCountdownNotification();
 
 
-                if (mTimerThread != null) {
-                    mTimerThread.cancelRunning();
-                    // keeps resetng the time
-                    mTimerThread.interrupt();
-                }
                 handler.removeCallbacks(mTimerThread);
-                mTimerThread = null;
+                killThread();
+
                 isAlarmSet = false;
                 bStart.setText("Start");
 
@@ -243,7 +243,7 @@ public class MainActivity extends Activity{
                 mTimerView.setHours(0);
                 mTimerView.resetArc();
 
-                btvSecsToMin.setText("0");
+                btvSecsToMin.setText("00");
                 btvMinToHr.setText("0");
 
                 // redundant since we do this in thread but we will see
@@ -578,6 +578,20 @@ public class MainActivity extends Activity{
 
     public boolean wasPlaying() {
         return prefClass.wasPlaying();
+    }
+    /* Called in TimerView by TicArc when joystick is moving this is called at the same time to tell
+     * MainActivity that time has changed and not to start a timer with saved time, but rather with the
+     * new time at hand.*/
+    public void timeAdjustedByUser() {
+        timeAdjusted = true;
+    }
+    /* called by timerView to kill thread and to reset values */
+    public void killThread() {
+        if (mTimerThread != null) {
+            mTimerThread.cancelRunning();
+            // keeps resetng the time
+            mTimerThread.interrupt();
+        }
     }
 /*
     // called by thread to set the data times behind the TimerView

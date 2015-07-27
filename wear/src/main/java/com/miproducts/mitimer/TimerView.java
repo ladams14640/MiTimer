@@ -386,6 +386,8 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
                 case MotionEvent.ACTION_MOVE:
                     xMove = event.getX();
                     yMove = event.getY();
+                    if(!mActivity.wasPlaying()){
+
 
                     // if timer is going  don't register touches.
                     // dismiss
@@ -398,6 +400,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
                     }
                     testJoyStick.processTouch(event.getX(), event.getY());
                     invalidate();
+                    }
                     return true;
                 case MotionEvent.ACTION_UP:
                     log("action_up");
@@ -529,6 +532,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
 
         // this method is called in the JoyStick's movement, to set the arc's value and invalidate.
         public void adjustArcSize(float theta) {
+            mActivity.timeAdjustedByUser();
          //   log("adjust arc size");
             if(!isHour){
                 if(!isLongPress)
@@ -552,6 +556,17 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
          * @return an Angle in degrees, used to display the user's representation of time on a circle
          */
        private float convertThetaToArcDegrees(float theta) {
+           // if we got time saved lets reset the values
+           if(mActivity.getTimeInPrefs() != 0){
+              // save it to 0
+              mActivity.saveTimeInPrefs(0);
+              // kill thread
+              mActivity.killThread();
+              mActivity.setHrTitle("HR");
+              mActivity.setMinTitle("MIN");
+              setHours(0);
+              setMinutes(0);
+           }
            /*
            * so at this point
            * 1. initZoomed was called when onMove hit parameters to consider parked - isLong is now set to true

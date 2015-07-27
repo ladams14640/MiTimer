@@ -79,6 +79,7 @@ public class JoyStick {
         jx = fx;
         jy = fy;
         //log("jx, jy = " + jx + ", " + jy);
+        // rubber meets the road, this reaches out and sets values and the arc.
         mTicArc.adjustArcSize(theta);
     }
 }

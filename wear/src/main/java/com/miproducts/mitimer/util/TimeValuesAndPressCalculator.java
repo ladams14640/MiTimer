@@ -27,6 +27,7 @@ public class TimeValuesAndPressCalculator {
 
 
     public int handleShortPress(double theta, int quadrant, boolean isHour){
+
         // 00
         if(isFingerInZeroRange(theta)){
             log("00");
