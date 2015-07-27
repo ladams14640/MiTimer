@@ -70,7 +70,7 @@ public class ThreadTimer extends Thread
                                 // seconds
                                 mActivity.setMinutes((int) timeCountDown / 1000 % 60);
                             }
-
+                            //TODO remove this else if we want to kill unconditionally. - first fix issue why we come back and have -13.
                             // Reset everything
                             else if(timeCountDown <= 0){
                                 log("timeCountdown == 0");
@@ -118,10 +118,14 @@ public class ThreadTimer extends Thread
         // need the time difference between now and the time we are counting down to!
         long timeToSave = timeCountDown;
         log("killThread - saving Prefs of " + timeToSave);
-
+        log("killThread - saving prefs System time of = " + System.currentTimeMillis());
         mActivity.saveTimeInPrefs(timeToSave);
+        mActivity.saveLastSystemTime(System.currentTimeMillis());
+
         // tell timerView to set their values based off of preference, since we just saved the time there.
         mActivity.informTimerViewOfDataChange();
+
+
 
         // dont reset any of this if we are just pausing.
         // want to show all the stuff still.

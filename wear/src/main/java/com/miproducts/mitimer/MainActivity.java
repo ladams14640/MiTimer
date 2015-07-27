@@ -222,9 +222,8 @@ public class MainActivity extends Activity{
                     cancelCountdownNotification();
                     prefClass.setPlaying(false);
                     isAlarmSet = false;
-
+                    timeAdjusted = false;
                     // thread will save to prefs the remaining time.
-                    handler.removeCallbacks(mTimerThread);
                     killThread();
                     mTimerThread = null;
 
@@ -237,14 +236,18 @@ public class MainActivity extends Activity{
         bReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                prefClass.setPlaying(false);
-                // handle thread
-                handler.removeCallbacks(mTimerThread);
-                killThread();
-                // self explanatory
                 cancelCountdownNotification();
-
+                prefClass.setPlaying(false);
                 isAlarmSet = false;
+                timeAdjusted = false;
+                // handle thread
+                killThread();
+                mTimerThread = null;
+
+                prefClass.saveLastSystemTime(0);
+                prefClass.saveAlarmTime(0);
+                // self explanatory
+
                 // no longer are we paused, if we were.
                 bStart.setText("Start");
 
@@ -255,10 +258,9 @@ public class MainActivity extends Activity{
                 // reset title of the two BorderTextViews
                 setHrTitle("HR");
                 setMinTitle("MIN");
-                // reset TimerView's hold on the data it uses to display through the BTVs.
-                resetHourAndMinute();
-                // reset the alarm that is saved in preferences.
-                resetPrefAlarmTime();
+
+                //resetHourAndMinute();
+                //resetPrefAlarmTime();
 
             }
         });
@@ -274,7 +276,7 @@ public class MainActivity extends Activity{
     }
     //TODO #2 dont accept touches on the arc when its countdown time.
 
-
+    //TODO refactor this is seriously meaty - maybe too much?
     // grab old alarmtime and compare to now
     private void grabCurrentAlarmTime() {
         //log("grabCurrentAlarm");
@@ -286,49 +288,78 @@ public class MainActivity extends Activity{
         // Something was saved lets startup.
         if(alarmTime != 0){
           boolean wasPlaying = prefClass.wasPlaying();
-            // was playing so we want to continue playing
-            // get HR, MIN, SEC for display.
-            timeKeeper = TimerFormat.breakDownMilliSeconds(alarmTime);
+            // That which was newNum = (alarmTime + lastCurrentTime) - currentTime should > 0
+            // if its > 0 then lets use that new num else newNum = 0; because time elapsed too far.
 
-            if(wasPlaying) {
-                isAlarmSet = true;
-                bStart.setText("Pause");
+            long lastSavedTime = prefClass.getLastSystemTime();
+            long lastSavedTimeCoupledWithAlarmTime = lastSavedTime + alarmTime;
+            long currentSystemTime = System.currentTimeMillis();
+
+            log("last Saved Time = " + lastSavedTime);
+            log("lastSavedTimeWithAlarmTime = " + lastSavedTimeCoupledWithAlarmTime);
+            log("currentTime = " + currentSystemTime);
+
+            long differenceInTime = currentSystemTime - lastSavedTimeCoupledWithAlarmTime;
+            log("Difference = " + differenceInTime);
+
+            // the time has not exceeded the alarm duration
+            if(differenceInTime > 0){
+                    log("got time left");
+                    // was playing so we want to continue playing
+                    // get HR, MIN, SEC for display.
+                    timeKeeper = TimerFormat.breakDownMilliSeconds(Math.abs(currentSystemTime - lastSavedTimeCoupledWithAlarmTime));
+                    // we were playing.
+                    if(wasPlaying) {
+                        isAlarmSet = true;
+                        bStart.setText("Pause");
 
 
 
-                // there was hrs stored.
-                if (timeKeeper.getHr() != 0) {
-                    //log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
 
-                    setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
-                    //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
+                        // there was hrs stored.
+                        if (timeKeeper.getHr() != 0) {
+                            //log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
+                            //TODO do math here to subtract current time from the total time.
+
+
+                            setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
+                            //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
+                        }
+                        // there was minutes and seconds stored.
+                        else {
+                            //log("Minute and Seconds of the timeKeeper is " + (int) timeKeeper.getMin() + " " + (int) timeKeeper.getSec());
+                            //TODO do math here to subtract current time from the total time.
+                            setupTimer(false, (int) timeKeeper.getSec(), (int) timeKeeper.getMin());
+                        }
                 }
-                // there was minutes and seconds stored.
+                // was not playing.
                 else {
-                    //log("Minute and Seconds of the timeKeeper is " + (int) timeKeeper.getMin() + " " + (int) timeKeeper.getSec());
+                    // there was hrs stored.
+                    if (timeKeeper.getHr() != 0) {
+                        //log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
 
-                    setupTimer(false, (int) timeKeeper.getSec(), (int) timeKeeper.getMin());
+                       // setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
+                        btvMinToHr.setText(Integer.toString((int) timeKeeper.getHr()));
+                        btvSecsToMin.setText(Integer.toString((int)timeKeeper.getMin()));
+                        //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
+                    }
+                    // there was minutes and seconds stored.
+                    else {
+                        log("Minute and Seconds of the timeKeeper is " + (int) timeKeeper.getMin() + " " + (int) timeKeeper.getSec());
+                        btvMinToHr.setText(Integer.toString((int) timeKeeper.getMin()));
+                        btvSecsToMin.setText(Integer.toString((int) timeKeeper.getSec()));
+                       // setupTimer(false, (int) timeKeeper.getSec(), (int) timeKeeper.getMin());
+                    }
                 }
+
             }
-            // was not playing.
+            // the time has exceeded the alarm duration
             else {
-                // there was hrs stored.
-                if (timeKeeper.getHr() != 0) {
-                    //log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
-
-                   // setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
-                    btvMinToHr.setText(Integer.toString((int) timeKeeper.getHr()));
-                    btvSecsToMin.setText(Integer.toString((int)timeKeeper.getMin()));
-                    //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
-                }
-                // there was minutes and seconds stored.
-                else {
-                    log("Minute and Seconds of the timeKeeper is " + (int) timeKeeper.getMin() + " " + (int) timeKeeper.getSec());
-                    btvMinToHr.setText(Integer.toString((int) timeKeeper.getMin()));
-                    btvSecsToMin.setText(Integer.toString((int) timeKeeper.getSec()));
-                   // setupTimer(false, (int) timeKeeper.getSec(), (int) timeKeeper.getMin());
-                }
+                log("no time left.");
+                isAlarmSet = false;
+                bStart.setText("Start");
             }
+
         }
         // nothing saved.
         else {
@@ -343,17 +374,10 @@ public class MainActivity extends Activity{
 
     @Override
     protected void onDestroy() {
-        handler.removeCallbacks(mTimerThread);
-        if(mTimerThread != null){
-            //TODO testing this seem to have a problem when i come back to the app i never saved the last time.
-            saveTimeInPrefs(mTimerThread.getCountDownTime());
-            mTimerThread.cancelRunning();
-            mTimerThread = null;
-
-        }
         unregisterReceiver(brKillThread);
+        saveTimeInPrefs(mTimerThread.getCountDownTime());
+        killThread();
         super.onDestroy();
-
     }
 
     // Took this from Timer sample project
@@ -401,12 +425,7 @@ public class MainActivity extends Activity{
         // Register with the alarm manager to display a notification when the timer is done.
         registerWithAlarmManager(fullTime);
 
-        if(mTimerThread != null){
-            mTimerThread.cancelRunning();
-            // remove prior thread
-            handler.removeCallbacks(mTimerThread);
-
-        }
+        killThread();
         // create new thread and start
         mTimerThread = new ThreadTimer(handler, this, fullTime);
         mTimerThread.start();
@@ -590,13 +609,22 @@ public class MainActivity extends Activity{
     public void timeAdjustedByUser() {
         timeAdjusted = true;
     }
-    /* called by timerView to kill thread and to reset values */
+    /* called by timerView to kill thread and to reset values
+       reset TimerView's hold on the data it uses to display through the BTVs.
+       reset the alarm that is saved in preferences.
+     */
     public void killThread() {
         if (mTimerThread != null) {
             mTimerThread.cancelRunning();
             // keeps resetng the time
             mTimerThread.interrupt();
         }
+        handler.removeCallbacks(mTimerThread);
+    }
+    /* Called by ThreadTimer to save time */
+    public void saveLastSystemTime(long l) {
+        prefClass.saveLastSystemTime(System.currentTimeMillis());
+
     }
 /*
     // called by thread to set the data times behind the TimerView

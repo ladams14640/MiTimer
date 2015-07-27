@@ -12,8 +12,10 @@ import android.util.Log;
 public class TimePreferenceSaved {
     // keep track of the alarm time
     public static final String KEY_ALARM_TIME = "KEY_ALARM_TIME";
-
+    // keep track if alarm was playing
     public static final String KEY_ALARM_PLAYING = "KEY_ALARM_PLAYING";
+    // keep track of the last System time before we ended the thread or exited the app
+    public static final String KEY_ALARM_SYSTEM_TIME = "KEY_ALARM_SYSTEM_TIME";
 
     private SharedPreferences mPrefs;
     private SharedPreferences.Editor mEditor;
@@ -28,8 +30,8 @@ public class TimePreferenceSaved {
     protected void saveAlarmTime(long timeForAlarm){
         log("saved alarm with value of "+ timeForAlarm);
         mEditor.putLong(KEY_ALARM_TIME, timeForAlarm);
-        mEditor.apply();
-        mEditor.commit();
+        applyEditorAndCommit();
+
     }
 
     protected long getAlarmTime(){
@@ -59,12 +61,27 @@ public class TimePreferenceSaved {
     // set whether we were paused.
     protected void setPlaying(boolean isPlaying){
         mEditor.putBoolean(KEY_ALARM_PLAYING, isPlaying);
+        applyEditorAndCommit();
+
+    }
+
+    /* Save last System Time */
+    protected void saveLastSystemTime(long currentSystemTime){
+        mEditor.putLong(KEY_ALARM_SYSTEM_TIME, currentSystemTime);
+        applyEditorAndCommit();
+    }
+
+    /**
+     * If nothing return 0 otherwise return the last SystemTime when we exited.
+     * @return
+     */
+    protected long getLastSystemTime(){
+        return mPrefs.getLong(KEY_ALARM_SYSTEM_TIME, 0);
+    }
+    private void applyEditorAndCommit(){
         mEditor.apply();
         mEditor.commit();
     }
-
-
-
 
     private void log(String s) {
         Log.d("TimePreferenceSave", s);
