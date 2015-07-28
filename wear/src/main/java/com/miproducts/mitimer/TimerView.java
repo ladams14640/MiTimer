@@ -342,7 +342,7 @@ public class TimerView extends View implements OnTouchListener, View.OnLongClick
                        //isLongPress = true;
                         // since i did the above we want to remove incase.
                         handVeryLongPress.removeCallbacks(mVeryLongPressed);
-                        handVeryLongPress.postDelayed(mVeryLongPressed, Constants.THRESHOLD_VERY_LONGPRESS);
+                        handVeryLongPress.postDelayed(mVeryLongPressed, Constants.THRESHOLD_LONGPRESS);
                         return true;
                     }
 

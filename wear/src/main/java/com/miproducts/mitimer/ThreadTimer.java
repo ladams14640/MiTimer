@@ -69,6 +69,21 @@ public class ThreadTimer extends Thread
                                 mActivity.setHours(countDownInMinutes);
                                 // seconds
                                 mActivity.setMinutes((int) timeCountDown / 1000 % 60);
+                            }// Alarm is more than 60 mins
+                            else if(countDownInMinutes > 60){
+                                //   log("minutes above 60");
+                                //TODO #1.1 lets make sure we go deep Minute without moving, see whats going on there.
+                                //TODO #1 lets make sure we reset arc or adjust it everytime we go back a second
+                                //TODO #2 add a Pause and play - do we rebuild alarm for that? me thinks so
+                                // TODO - #2 maybe wait till we remove the notification Function - hate that damn thing.
+                                mActivity.setHours((int) (timeCountDown / 1000 / 60 / 60));
+                                mActivity.setMinutes((int) (timeCountDown / 1000 / 60 % 60));
+                                // haven't set the titles yet
+                                if(!isTitleSet){
+                                    isTitleSet = true;
+                                    mActivity.setHrTitle(HR);
+                                    mActivity.setMinTitle(MIN);
+                                }
                             }
                             //TODO acting wierd when i switch this to a if - figure out why my thread wont
                             // show seconds if so and fix it.
@@ -84,22 +99,7 @@ public class ThreadTimer extends Thread
 
                             }
 
-                            // Alarm is more than 60 mins
-                            else {
-                                //   log("minutes above 60");
-                                //TODO #1.1 lets make sure we go deep Minute without moving, see whats going on there.
-                                //TODO #1 lets make sure we reset arc or adjust it everytime we go back a second
-                                //TODO #2 add a Pause and play - do we rebuild alarm for that? me thinks so
-                                // TODO - #2 maybe wait till we remove the notification Function - hate that damn thing.
-                                mActivity.setHours((int) (timeCountDown / 1000 / 60 / 60));
-                                mActivity.setMinutes((int) (timeCountDown / 1000 / 60 % 60));
-                                // haven't set the titles yet
-                                if(!isTitleSet){
-                                    isTitleSet = true;
-                                    mActivity.setHrTitle(HR);
-                                    mActivity.setMinTitle(MIN);
-                                }
-                            }
+
                         }
 
 

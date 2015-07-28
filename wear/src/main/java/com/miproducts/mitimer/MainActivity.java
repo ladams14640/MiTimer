@@ -220,8 +220,13 @@ public class MainActivity extends Activity{
                     //log("Pause");
                     cancelCountdownNotification();
                     prefClass.setPlaying(false);
+
                     isAlarmSet = false;
                     timeAdjusted = false;
+                    //TODO tesrting this - hr is acting wierd for saving and even Pausing.
+                    if(mTimerThread != null)
+                        mTimerThread.pauseRunning();
+
                     // thread will save to prefs the remaining time.
                     killThread();
                     mTimerThread = null;
@@ -243,13 +248,10 @@ public class MainActivity extends Activity{
                 killThread();
                 mTimerThread = null;
 
-                prefClass.saveLastSystemTime(0);
-                prefClass.saveAlarmTime(0);
-                // self explanatory
+
 
                 // no longer are we paused, if we were.
                 bStart.setText("Start");
-
                 mTimerView.resetArc();
                 // reset BorderTextView display's
                 setMinutes(0);
@@ -258,8 +260,12 @@ public class MainActivity extends Activity{
                 setHrTitle("HR");
                 setMinTitle("MIN");
 
-                //resetHourAndMinute();
-                //resetPrefAlarmTime();
+                saveTimeInPrefs(0);
+                saveLastSystemTime(0);
+
+                resetHourAndMinute();
+                resetPrefAlarmTime();
+                mTimerView.adjustTimeBasedOffOfPreferences();
 
             }
         });
@@ -535,6 +541,7 @@ public class MainActivity extends Activity{
     }
 
     public void setHours(int hours){
+        log("setHours with " + hours);
         btvMinToHr.setText(Integer.toString(hours));
        // mTimerView.setMinutes(hours);
 
