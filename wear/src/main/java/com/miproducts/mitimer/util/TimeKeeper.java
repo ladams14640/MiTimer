@@ -1,7 +1,9 @@
 package com.miproducts.mitimer.util;
 
 /**
- * STORE Hr, Min, Sec - maybe even incorporate it in more than what im using.
+ * STORE Hr, Min, Sec
+ * It so far is only generated through the TimerFormat's method breakDownMilliSeconds
+ * this generates a TimeKeeper, which is used to display whole number time, in the BTVs of TimeView.
  * Created by ladam_000 on 7/22/2015.
  */
 public class TimeKeeper {

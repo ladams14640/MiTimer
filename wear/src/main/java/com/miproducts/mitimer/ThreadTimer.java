@@ -70,7 +70,8 @@ public class ThreadTimer extends Thread
                                 // seconds
                                 mActivity.setMinutes((int) timeCountDown / 1000 % 60);
                             }
-                            //TODO remove this else if we want to kill unconditionally. - first fix issue why we come back and have -13.
+                            //TODO acting wierd when i switch this to a if - figure out why my thread wont
+                            // show seconds if so and fix it.
                             // Reset everything
                             else if(timeCountDown <= 0){
                                 log("timeCountdown == 0");

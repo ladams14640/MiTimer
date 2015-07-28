@@ -184,7 +184,6 @@ public class MainActivity extends Activity{
                         // there was hrs stored.
                         if(timeKeeper.getHr() != 0) {
                             //log("hr and minute of the timeKeeper is " + (int) timeKeeper.getHr() + " " + (int) timeKeeper.getMin());
-                            //TODO was getMin() and getHr() - want to see if i can fixm y shit.
                             setupTimer(true, (int) timeKeeper.getMin(), (int) timeKeeper.getHr());
                             //prefClass.saveAlarmTime(System.currentTimeMillis() + countDownTime);
                         }
@@ -274,7 +273,6 @@ public class MainActivity extends Activity{
         notifyMgr.cancel(Constants.NOTIFICATION_TIMER_COUNTDOWN);
 
     }
-    //TODO #2 dont accept touches on the arc when its countdown time.
 
     //TODO refactor this is seriously meaty - maybe too much?
     // grab old alarmtime and compare to now
@@ -297,6 +295,10 @@ public class MainActivity extends Activity{
             long currentSystemTime = System.currentTimeMillis();
             long diffInTime = currentSystemTime - lastSavedTime;
             long diffInAlarm = alarmTime - diffInTime;
+
+            // Save the time now, because if setupTimer is called - due to time being paused - then
+            // it will grab old data, we want the fresh alarm now!
+            saveTimeInPrefs(diffInAlarm);
 
             log("last Saved Time = " + lastSavedTime);
             log("currentTime = " + currentSystemTime);

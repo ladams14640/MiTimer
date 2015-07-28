@@ -136,10 +136,12 @@ public final class TimerFormat {
         log("minutes = " + minutes);
         if(minutes < 60){
             seconds = alarmTime/1000%60;
-
+            log("only minutes and seconds");
         }
         // there is more than an hour.
         else {
+            log("only hours and minutes");
+
             hour = alarmTime/1000/60/60;
             minutes = alarmTime/1000/60%60;
         }
