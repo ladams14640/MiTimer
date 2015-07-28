@@ -291,23 +291,25 @@ public class MainActivity extends Activity{
             // That which was newNum = (alarmTime + lastCurrentTime) - currentTime should > 0
             // if its > 0 then lets use that new num else newNum = 0; because time elapsed too far.
 
+            // Grab last saved time Stamp
             long lastSavedTime = prefClass.getLastSystemTime();
-            long lastSavedTimeCoupledWithAlarmTime = lastSavedTime + alarmTime;
+
             long currentSystemTime = System.currentTimeMillis();
+            long diffInTime = currentSystemTime - lastSavedTime;
+            long diffInAlarm = alarmTime - diffInTime;
 
             log("last Saved Time = " + lastSavedTime);
-            log("lastSavedTimeWithAlarmTime = " + lastSavedTimeCoupledWithAlarmTime);
             log("currentTime = " + currentSystemTime);
+            log("diffInTime = " + diffInTime);
+            log("diffInAlarm = " + diffInAlarm);
 
-            long differenceInTime = currentSystemTime - lastSavedTimeCoupledWithAlarmTime;
-            log("Difference = " + differenceInTime);
 
             // the time has not exceeded the alarm duration
-            if(differenceInTime > 0){
+            if(diffInAlarm > 0){
                     log("got time left");
                     // was playing so we want to continue playing
                     // get HR, MIN, SEC for display.
-                    timeKeeper = TimerFormat.breakDownMilliSeconds(Math.abs(currentSystemTime - lastSavedTimeCoupledWithAlarmTime));
+                    timeKeeper = TimerFormat.breakDownMilliSeconds(diffInAlarm);
                     // we were playing.
                     if(wasPlaying) {
                         isAlarmSet = true;
@@ -375,7 +377,10 @@ public class MainActivity extends Activity{
     @Override
     protected void onDestroy() {
         unregisterReceiver(brKillThread);
-        saveTimeInPrefs(mTimerThread.getCountDownTime());
+        // must check - otherwise will crash if we dont have a thread, because we paused it.
+        if(mTimerThread != null)
+            saveTimeInPrefs(mTimerThread.getCountDownTime());
+        prefClass.saveLastSystemTime(System.currentTimeMillis());
         killThread();
         super.onDestroy();
     }
