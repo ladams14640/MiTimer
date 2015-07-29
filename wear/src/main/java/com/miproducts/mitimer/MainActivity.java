@@ -112,13 +112,13 @@ public class MainActivity extends Activity{
                     // they don't seem to be picked up deep down, even as far down as TimerView
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
-                       // lets make sure we dont mess with the time while it's running.
+                        // lets make sure we dont mess with the time while it's running.
 
-                            // this awakens onInterceptDispatch.
-                            // NOT GETTING ActionEvent.ON_MOVE without this
-                            mTimerView.onTouchEvent(event);
-                            // keep false to keep sending it down the chain and not absorbing.
-                            flLayout.onTouchEvent(event);
+                        // this awakens onInterceptDispatch.
+                        // NOT GETTING ActionEvent.ON_MOVE without this
+                        mTimerView.onTouchEvent(event);
+                        // keep false to keep sending it down the chain and not absorbing.
+                        flLayout.onTouchEvent(event);
 
 
                         return false;
@@ -127,8 +127,8 @@ public class MainActivity extends Activity{
 
 
                 initTextViews();
-                // grab old time compare to now and handle according.
                 grabCurrentAlarmTime();
+
 
 
             }
@@ -378,9 +378,26 @@ public class MainActivity extends Activity{
 
         }
     }
+    // annoying that i get wierd results when screen dims by user's palm so ima try this.
+    @Override
+    protected void onPause() {
+       // unregisterReceiver(brKillThread);
+        // must check - otherwise will crash if we dont have a thread, because we paused it.
+        if(mTimerThread != null)
+            saveTimeInPrefs(mTimerThread.getCountDownTime());
+        prefClass.saveLastSystemTime(System.currentTimeMillis());
+        killThread();
+        super.onPause();
+    }
+    // moved grab current alarm time here because it kicks off thread for us if we need,
+    // even when just paused and coming back.
 
 
-
+    @Override
+    protected void onRestart() {
+        grabCurrentAlarmTime();
+        super.onRestart();
+    }
 
     @Override
     protected void onDestroy() {
