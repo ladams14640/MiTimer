@@ -31,6 +31,8 @@ import com.miproducts.mitimer.util.TimerFormat;
 public class MainActivity extends Activity{
     private final String TAG = "MainActivity";
     public static final String ACTION = BuildConfig.APPLICATION_ID + ".action.ALARM";
+    // intent filter and intent to kill thread from notification.
+    public static final String KEY_INTENT_KILL_THREAD = "Cancel_Timer";
 
     private TextView tvColon;
     private FrameLayout container;
@@ -71,7 +73,6 @@ public class MainActivity extends Activity{
     private TimeKeeper timeKeeper;
 
     // tell us to kill thread - from notification
-
     final BroadcastReceiver brKillThread = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -381,7 +382,7 @@ public class MainActivity extends Activity{
     // annoying that i get wierd results when screen dims by user's palm so ima try this.
     @Override
     protected void onPause() {
-       // unregisterReceiver(brKillThread);
+        unregisterReceiver(brKillThread);
         // must check - otherwise will crash if we dont have a thread, because we paused it.
         if(mTimerThread != null)
             saveTimeInPrefs(mTimerThread.getCountDownTime());
@@ -398,7 +399,7 @@ public class MainActivity extends Activity{
         grabCurrentAlarmTime();
         super.onRestart();
     }
-
+/*
     @Override
     protected void onDestroy() {
         unregisterReceiver(brKillThread);
@@ -409,7 +410,7 @@ public class MainActivity extends Activity{
         killThread();
         super.onDestroy();
     }
-
+*/
     // Took this from Timer sample project
     // timer stuff all came from Android Timer project sample
 
@@ -603,7 +604,7 @@ public class MainActivity extends Activity{
     @Override
     protected void onStart() {
         super.onStart();
-        IntentFilter intentKillThread = new IntentFilter("Cancel_Timer");
+        IntentFilter intentKillThread = new IntentFilter(KEY_INTENT_KILL_THREAD);
         registerReceiver(brKillThread, intentKillThread);
     }
     // called by thread to reset everything

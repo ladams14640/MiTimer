@@ -127,7 +127,7 @@
             android:id="@+id/bReset"
             android:layout_width="100dp"
             android:layout_height="35dp"
-            android:text="Res"
+            android:text="Reset"
             android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"/>
     </LinearLayout>

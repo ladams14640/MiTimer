@@ -116,8 +116,9 @@ public class TimerNotificationService extends IntentService {
                 vibrator.cancel();
     }
 
+    // tell Activity to kill thread if need be.
     private void cancelTimerThread() {
-        Intent cancelIntent = new Intent("Cancel_Timer");
+        Intent cancelIntent = new Intent(MainActivity.KEY_INTENT_KILL_THREAD);
         sendBroadcast(cancelIntent);
     }
 
